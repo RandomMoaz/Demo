@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Muslim Companion — Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night:#12162b; --night-2:#1a1f3d; --night-3:#232a54;
+    --sand:#ece3d0; --sand-dim:#a99f88;
+    --gold:#c9a227; --gold-soft:rgba(201,162,39,0.14);
+    --line:rgba(236,227,208,0.10); --radius:18px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(201,162,39,0.10), transparent 60%),
+      #0a0d1d;
+    color:var(--sand);
+    font-family:'IBM Plex Sans',sans-serif;
+    min-height:100%;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px 16px 40px;
+  }
+
+  /* ---------- launcher ---------- */
+  .launcher {
+    width:100%; max-width:460px;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .brand {
+    text-align:center; margin-bottom:26px;
+  }
+  .brand .mark {
+    width:64px; height:64px; margin:0 auto 16px;
+    border-radius:20px; background:var(--gold-soft);
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid rgba(201,162,39,.3);
+  }
+  .brand .mark svg { width:34px; height:34px; color:var(--gold); }
+  .brand .ar { font-family:'Amiri',serif; color:var(--gold); font-size:26px; line-height:1.2; }
+  .brand h1 { font-size:22px; font-weight:700; margin-top:4px; }
+  .brand p { font-size:13px; color:var(--sand-dim); margin-top:8px; line-height:1.6; max-width:360px; margin-inline:auto; }
+  .brand .demo-pill {
+    display:inline-block; margin-top:14px;
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--gold);
+    border:1px solid rgba(201,162,39,.35); border-radius:20px; padding:5px 14px;
+  }
+
+  .cards { width:100%; display:flex; flex-direction:column; gap:12px; }
+  .feature {
+    display:flex; align-items:center; gap:15px; text-align:start;
+    border:1px solid var(--line); background:var(--night-2);
+    border-radius:var(--radius); padding:16px 17px;
+    cursor:pointer; color:var(--sand); font-family:inherit;
+    transition:border-color .18s, transform .18s, background .18s;
+    width:100%;
+  }
+  .feature:hover { transform:translateY(-2px); border-color:var(--gold); background:var(--night-3); }
+  .feature .f-ico {
+    width:46px; height:46px; flex-shrink:0; border-radius:13px;
+    background:var(--gold-soft); color:var(--gold);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .feature .f-ico svg { width:24px; height:24px; }
+  .feature .f-name { font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .feature .f-name .tag {
+    font-size:8.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--gold); border:1px solid rgba(201,162,39,.4);
+    border-radius:9px; padding:2px 7px; font-weight:500;
+  }
+  .feature .f-desc { font-size:11.5px; color:var(--sand-dim); margin-top:4px; line-height:1.5; }
+  .feature .f-ar { font-family:'Amiri',serif; color:var(--gold); font-size:17px; margin-inline-start:auto; opacity:.8; align-self:flex-start; }
+
+  .footer {
+    margin-top:26px; text-align:center; font-size:11px; color:var(--sand-dim); line-height:1.7;
+  }
+  .footer b { color:var(--sand); font-weight:600; }
+
+  /* ---------- feature viewer (iframe overlay) ---------- */
+  .viewer {
+    position:fixed; inset:0; z-index:50;
+    background:#0a0d1d;
+    display:none; flex-direction:column;
+  }
+  .viewer.open { display:flex; }
+  .viewer-bar {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px; padding-top:max(12px, env(safe-area-inset-top));
+    border-bottom:1px solid var(--line); background:var(--night-2);
+    flex-shrink:0;
+  }
+  .viewer-bar .back {
+    display:flex; align-items:center; gap:7px;
+    background:none; border:1px solid var(--line); color:var(--sand);
+    border-radius:20px; padding:8px 14px; font-family:inherit; font-size:13px; cursor:pointer;
+  }
+  .viewer-bar .back:hover { border-color:var(--gold); color:var(--gold); }
+  .viewer-bar .v-title { font-size:14px; font-weight:600; }
+  .viewer-bar .v-title .ar { font-family:'Amiri',serif; color:var(--gold); margin-inline-start:6px; }
+  .viewer iframe { flex:1; width:100%; border:none; background:#0a0d1d; }
+</style>
+</head>
+<body>
+
+  <main class="launcher">
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3l2.5 2.5M12 3a9 9 0 1 0 9 9"/><path d="M5 20v-6a7 7 0 0 1 14 0v6"/><path d="M3 20h18"/>
+        </svg>
+      </div>
+      <div class="ar">رفيق المسلم الجديد</div>
+      <h1>New Muslim Companion</h1>
+      <p>A graduation-project app that helps new Muslims learn prayer, recitation, and daily practice — with AI-assisted tools.</p>
+      <div class="demo-pill">Interactive demo</div>
+    </div>
+
+    <div class="cards">
+      <button class="feature" data-src="home_screen_design_v4.html" data-title="The App" data-ar="الرئيسية">
+        <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></div>
+        <div>
+          <div class="f-name">The App <span class="tag">start here</span></div>
+          <div class="f-desc">Pick a language &amp; profile — then the home screen and Rashed, the Q&amp;A assistant.</div>
+        </div>
+        <span class="f-ar">تطبيق</span>
+      </button>
+
+      <button class="feature" data-src="salah_pose_prototype.html" data-title="Prayer Pose Detection" data-ar="صلاة" data-camera="1">
+        <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-7a7 7 0 0 1 14 0v7"/><path d="M3 20h18"/></svg></div>
+        <div>
+          <div class="f-name">Prayer Pose Detection <span class="tag">camera</span></div>
+          <div class="f-desc">The novel core — detects prayer positions &amp; sequence live with your camera.</div>
+        </div>
+        <span class="f-ar">صلاة</span>
+      </button>
+
+      <button class="feature" data-src="halal_scanner_prototype.html" data-title="Halal Scanner" data-ar="حلال" data-camera="1">
+        <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg></div>
+        <div>
+          <div class="f-name">Halal Scanner <span class="tag">camera · OCR</span></div>
+          <div class="f-desc">Scan a barcode or ingredient photo — flags haram &amp; doubtful ingredients.</div>
+        </div>
+        <span class="f-ar">حلال</span>
+      </button>
+    </div>
+
+    <div class="footer">
+      <b>Tip:</b> works best in Chrome on your phone. The camera features need to open<br>over a secure (https) link — tap a card and allow camera access when asked.
+    </div>
+  </main>
+
+  <div class="viewer" id="viewer">
+    <div class="viewer-bar">
+      <button class="back" id="backBtn">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Back
+      </button>
+      <div class="v-title" id="vTitle"></div>
+    </div>
+    <iframe id="vFrame" allow="camera; microphone" allowfullscreen></iframe>
+  </div>
+
+<script>
+  const viewer = document.getElementById('viewer');
+  const frame = document.getElementById('vFrame');
+  const vTitle = document.getElementById('vTitle');
+
+  document.querySelectorAll('.feature').forEach(btn => {
+    btn.addEventListener('click', () => {
+      frame.src = btn.dataset.src;
+      vTitle.innerHTML = btn.dataset.title + (btn.dataset.ar ? ` <span class="ar">${btn.dataset.ar}</span>` : '');
+      viewer.classList.add('open');
+      history.pushState({ open:true }, '');
+    });
+  });
+
+  function closeViewer() {
+    viewer.classList.remove('open');
+    frame.src = 'about:blank';
+  }
+  document.getElementById('backBtn').addEventListener('click', () => history.back());
+  window.addEventListener('popstate', () => { if (viewer.classList.contains('open')) closeViewer(); });
+</script>
+</body>
+</html>
