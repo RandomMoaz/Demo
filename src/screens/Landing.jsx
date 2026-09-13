@@ -4,6 +4,7 @@ import SplitText from '../components/reactbits/SplitText'
 import ShinyText from '../components/reactbits/ShinyText'
 import { Anim } from '../components/Lottie'
 import { LANGS } from '../lib/data'
+import LangPicker from '../components/LangPicker'
 
 /* ---------- site copy, per language ---------- */
 const SITE = {
@@ -185,7 +186,7 @@ const SITE = {
 const site = (lang) => SITE[lang] || SITE.en
 
 export default function Landing() {
-  const { go, theme, setTheme, lang, setLang } = useApp()
+  const { go, theme, setTheme, lang, setLang, t } = useApp()
   const s = site(lang)
   const isAr = s.dir === 'rtl'
 
@@ -210,9 +211,7 @@ export default function Landing() {
             <a href="#app">{s.nav.app}</a>
           </nav>
           <div className="nav-actions">
-            <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value)} aria-label="language">
-              {LANGS.map((l) => <option key={l.id} value={l.id}>{l.native}</option>)}
-            </select>
+            <LangPicker value={lang} onChange={setLang} label={t.back} />
             <button className="icon-btn" onClick={() => setTheme(theme === 'night' ? 'day' : 'night')} aria-label="theme">
               {theme === 'night' ? '☀' : '☾'}
             </button>

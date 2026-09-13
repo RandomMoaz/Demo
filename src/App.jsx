@@ -45,7 +45,7 @@ export default function App() {
     }
   }
 
-  // the landing page is a full website layout, not the phone-style app shell
+  
   if (screen === 'landing') {
     return (
       <div className="site-root" data-theme={theme} lang={lang}>
