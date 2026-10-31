@@ -1,21 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { DecodeHintType, BarcodeFormat } from '@zxing/library'
-
-/* GTIN check digit (EAN-8 / UPC-A / EAN-13). Rejects misreads before any network call. */
-export function validGtin(code) {
-  if (!/^\d+$/.test(code) || ![8, 12, 13].includes(code.length)) return false
-  const d = code.split('').map(Number)
-  const check = d.pop()
-  let sum = 0
-  for (let i = d.length - 1, w = 3; i >= 0; i--, w = 4 - w) sum += d[i] * w
-  return (10 - (sum % 10)) % 10 === check
-}
+import { parseScannedCode } from '../lib/scanCodes'
 
 const MSG = {
   en: {
     open: 'Open camera', close: 'Close camera', starting: 'Starting camera…',
-    hint: 'Point the camera at the barcode and hold steady.',
+    hint: 'Point the camera at the barcode or QR code and hold steady.',
+    qrLink: (h) => `This QR code is a link to a website (${h}), not a product code. We did not open it. Scan the product barcode, or paste the ingredients.`,
+    qrOther: 'This QR code does not contain a product code. Scan the product barcode, or paste the ingredients.',
     denied: 'Camera permission was denied. Allow it in the browser settings, or type the code below.',
     nocam: 'No camera was found on this device. Type the code below.',
     busy: 'The camera is in use by another app. Close it and try again.',
@@ -24,7 +17,9 @@ const MSG = {
   },
   ar: {
     open: 'افتح الكاميرا', close: 'اقفل الكاميرا', starting: 'جارٍ تشغيل الكاميرا…',
-    hint: 'وجّه الكاميرا للباركود وثبّتها.',
+    hint: 'وجّه الكاميرا للباركود أو كود QR وثبّتها.',
+    qrLink: (h) => `كود QR ده رابط لموقع (${h}) وليس كود منتج. ما فتحناهوش. امسح باركود المنتج أو الصق المكونات.`,
+    qrOther: 'كود QR ده مفيهوش كود منتج. امسح باركود المنتج أو الصق المكونات.',
     denied: 'تم رفض إذن الكاميرا. اسمح بها من إعدادات المتصفح، أو اكتب الرقم بالأسفل.',
     nocam: 'مفيش كاميرا على الجهاز ده. اكتب الرقم بالأسفل.',
     busy: 'الكاميرا مستخدمة في تطبيق تاني. اقفله وجرّب تاني.',
@@ -34,7 +29,7 @@ const MSG = {
 }
 
 const hints = new Map([
-  [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A]],
+  [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.QR_CODE]],
   [DecodeHintType.TRY_HARDER, true],
 ])
 
@@ -44,6 +39,7 @@ export default function BarcodeCam({ lang = 'en', onCode }) {
   const controlsRef = useRef(null)
   const lastRef = useRef({ code: '', n: 0 })
   const [state, setState] = useState('idle') // idle | starting | scanning | error key
+  const [note, setNote] = useState('') // shown when a QR code is not a product code
 
   const stop = useCallback(() => {
     try { controlsRef.current?.stop() } catch { /* already stopped */ }
@@ -56,7 +52,7 @@ export default function BarcodeCam({ lang = 'en', onCode }) {
   const start = useCallback(async () => {
     if (!window.isSecureContext) return setState('insecure')
     if (!navigator.mediaDevices?.getUserMedia) return setState('nocam')
-    setState('starting')
+    setState('starting'); setNote('')
     try {
       const reader = new BrowserMultiFormatReader(hints)
       controlsRef.current = await reader.decodeFromConstraints(
@@ -64,13 +60,19 @@ export default function BarcodeCam({ lang = 'en', onCode }) {
         videoRef.current,
         (result) => {
           if (!result) return
-          const code = result.getText()
-          if (!validGtin(code)) return
-          // the same valid code must be read twice in a row before we trust it
+          const isQr = result.getBarcodeFormat() === BarcodeFormat.QR_CODE
+          const p = parseScannedCode(result.getText())
+          // 1D barcodes that are not a valid product code are misreads: ignore silently
+          if (!isQr && p.kind !== 'gtin') return
+          // the same content must be read twice in a row before we trust it
+          const key = p.kind === 'gtin' ? p.gtin : `${p.kind}:${p.host || ''}`
           const last = lastRef.current
-          last.n = last.code === code ? last.n + 1 : 1
-          last.code = code
-          if (last.n >= 2) { stop(); setState('idle'); onCode(code) }
+          last.n = last.code === key ? last.n + 1 : 1
+          last.code = key
+          if (last.n < 2) return
+          stop(); setState('idle')
+          if (p.kind === 'gtin') onCode(p.gtin)
+          else setNote(p.kind === 'url' ? m.qrLink(p.host) : m.qrOther) // links are shown as text only, never opened
         }
       )
       setState('scanning')
@@ -95,6 +97,7 @@ export default function BarcodeCam({ lang = 'en', onCode }) {
       </div>
       {state === 'starting' && <p className="cam-note">{m.starting}</p>}
       {state === 'scanning' && <p className="cam-note">{m.hint}</p>}
+      {note && <p className="cam-note err">{note}</p>}
       {m[state] && !active && state !== 'idle' && <p className="cam-note err">{m[state]}</p>}
       <button className="btn block" onClick={active ? () => { stop(); setState('idle') } : start}>
         {active ? m.close : m.open}
