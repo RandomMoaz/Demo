@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext'
 import { analyze, pick } from '../lib/data'
 import { Anim } from '../components/Lottie'
 import BarcodeCam from '../components/BarcodeCam'
+import IngredientOCR from '../components/IngredientOCR'
 
 const Back = ({ onClick }) => (
   <button className="back-ic" onClick={onClick} aria-label="back">
@@ -15,6 +16,7 @@ export function Scanner() {
   const { t, lang, go , back} = useApp()
   const [tab, setTab] = useState('paste')
   const [text, setText] = useState('')
+  const [ocrConf, setOcrConf] = useState(null) // set after an OCR read, cleared once the user edits the text
   const [result, setResult] = useState(null)
   const [code, setCode] = useState('')
   const [status, setStatus] = useState('')
@@ -49,9 +51,9 @@ export function Scanner() {
       </div>
       <div className="feat-body">
         <div style={{ display: 'flex', gap: 7, marginBottom: 12 }}>
-          {['barcode', 'paste'].map((x) => (
+          {['barcode', 'photo', 'paste'].map((x) => (
             <button key={x} className="btn ghost" style={{ flex: 1, minHeight: 42, borderColor: tab === x ? 'var(--accent)' : undefined, color: tab === x ? 'var(--accent)' : undefined }} onClick={() => { setTab(x); setResult(null) }}>
-              {x === 'barcode' ? t.tabBarcode : t.tabPaste}
+              {x === 'barcode' ? t.tabBarcode : x === 'photo' ? (lang === 'ar' ? 'صورة' : 'Photo') : t.tabPaste}
             </button>
           ))}
         </div>
@@ -71,9 +73,11 @@ export function Scanner() {
           </>
         ) : (
           <>
-            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{t.pasteLead}</p>
-            <textarea className="paste" value={text} onChange={(e) => setText(e.target.value)} placeholder="Sugar, palm oil, gelatin, soy lecithin, mono- and diglycerides…" />
-            <button className="btn block" style={{ marginTop: 12 }} onClick={() => show('Pasted ingredients', text)}>{t.analyze}</button>
+            {tab === 'photo'
+              ? <IngredientOCR lang={lang} onResult={({ text: tx, conf }) => { setText(tx); setOcrConf(conf) }} />
+              : <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{t.pasteLead}</p>}
+            <textarea className="paste" value={text} onChange={(e) => { setText(e.target.value); setOcrConf(null) }} placeholder="Sugar, palm oil, gelatin, soy lecithin, mono- and diglycerides…" />
+            <button className="btn block" style={{ marginTop: 12 }} onClick={() => show(tab === 'photo' ? 'Photo ingredients' : 'Pasted ingredients', text, ocrConf == null || ocrConf >= 70)}>{t.analyze}</button>
           </>
         )}
 
@@ -92,6 +96,7 @@ export function Scanner() {
                 <div className="fw">{pick(f.w, lang)}</div>
               </div>
             ))}
+            {result.cert && <div className="fine">{lang === 'ar' ? 'النص يذكر كلمة «حلال» — هذا ادّعاء على الملصق ولم نتحقق منه.' : 'The text mentions "halal" — that is a label claim we have not verified.'}</div>}
             <div className="fine">{t.scanFine}</div>
             {result.found[0] && (
               <button className="btn ghost block" style={{ marginTop: 12 }}

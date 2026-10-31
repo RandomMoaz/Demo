@@ -752,3 +752,8 @@ body:has(.site-root){ display:block; background:var(--bg); }
 @keyframes cam-sweep{ from{ transform:translateY(-34px); } to{ transform:translateY(34px); } }
 .cam-note{ font-size:12px; color:var(--muted); margin:0 0 10px; line-height:1.5; }
 .cam-note.err{ color:var(--coral, #e8634a); }
+
+/* OCR */
+label.btn.disabled{ opacity:.55; pointer-events:none; }
+.ocr-bar{ display:block; height:4px; margin-top:6px; border-radius:2px; background:rgba(128,128,128,.25); overflow:hidden; }
+.ocr-bar i{ display:block; height:100%; background:var(--accent, #2e8b6a); transition:width .2s; }
