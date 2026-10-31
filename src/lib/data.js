@@ -60,7 +60,7 @@ export const SITES = [
 // ingredient knowledge base (haram / doubtful)
 export const RULES = [
   {
-    id: 'pork', s: 'haram', re: /\b(pork|porcine|swine|bacon|ham|lard|prosciutto|chorizo)\b|خنزير/i,
+    id: 'pork', s: 'haram', re: /\b(pork|porcine|swine|bacon|ham|lard|prosciutto|chorizo|porc|schwein|schweinefleisch|cerdo)\b|خنزير/i,
     n: { en: 'Pork / pig-derived', ar: 'خنزير', de: 'Schwein / vom Schwein', fr: 'Porc / dérivé du porc', es: 'Cerdo / derivado del cerdo', ja: '豚肉・豚由来' },
     w: {
       en: 'Pork and anything from pigs is impermissible.',
@@ -72,7 +72,7 @@ export const RULES = [
     },
   },
   {
-    id: 'alcohol', s: 'haram', re: /\b(alcohol|ethanol|wine|beer|rum|liqueur|brandy)\b|كحول|خمر/i,
+    id: 'alcohol', s: 'haram', re: /\b(alcohol|alcool|alkohol|ethanol|wine|beer|rum|liqueur|brandy)\b|كحول|خمر/i,
     n: { en: 'Alcohol / intoxicant', ar: 'كحول', de: 'Alkohol / Rauschmittel', fr: 'Alcool / enivrant', es: 'Alcohol / embriagante', ja: 'アルコール・酩酊物' },
     w: {
       en: 'Drinking alcohol and added ethanol are impermissible.',
@@ -84,7 +84,7 @@ export const RULES = [
     },
   },
   {
-    id: 'gelatin', s: 'doubtful', re: /\b(gelatin|gelatine)\b|جيلاتين|جلاتين/i,
+    id: 'gelatin', s: 'doubtful', re: /\b(gelatin|gelatine|gélatine|gelatina)\b|جيلاتين|جلاتين/i,
     n: { en: 'Gelatin', ar: 'جيلاتين', de: 'Gelatine', fr: 'Gélatine', es: 'Gelatina', ja: 'ゼラチン' },
     w: {
       en: 'Usually pork or non-halal beef. Fine only from a halal-certified or fish source — verify.',
@@ -143,6 +143,21 @@ export const RULES = [
       ja: '動物性レンネットを使う場合のみ疑わしく、多くは問題ありません。',
     },
   },
+  {
+    id: 'shellac', s: 'doubtful', re: /\b(shellac|confectioner'?s glaze)\b|E ?904/i,
+    n: { en: 'Shellac (E904)', ar: 'شمع اللاك E904' },
+    w: { en: 'A resin secreted by insects; some scholars permit it, others treat it as doubtful.', ar: 'مادة راتنجية تفرزها الحشرات؛ أجازها بعض العلماء وتوقّف فيها آخرون.' },
+  },
+  {
+    id: 'cysteine', s: 'doubtful', re: /\bL-?\s?cysteine\b|E ?920/i,
+    n: { en: 'L-cysteine (E920)', ar: 'إل-سيستين E920' },
+    w: { en: 'Often made from animal hair or feathers (sometimes human or pig) — source matters.', ar: 'كثيرًا ما تُستخرج من شعر أو ريش الحيوان (وأحيانًا من الخنزير) — المصدر مهم.' },
+  },
+  {
+    id: 'glycerin', s: 'doubtful', re: /\b(glycerin|glycerine|glycerol)\b|E ?422|جلسرين|غليسرين/i,
+    n: { en: 'Glycerin (E422)', ar: 'جلسرين E422' },
+    w: { en: 'Can be plant-based or animal-based — source matters.', ar: 'قد يكون نباتيًا أو حيوانيًا — المصدر مهم.' },
+  },
 ]
 
 // pick a translated field from a {en, ar, de, fr, es, ja} object, falling back to English
@@ -150,12 +165,17 @@ export const pick = (o, lang) => (o && (o[lang] || o.en)) || ''
 
 export const HALAL_RE = /\bhalal\b|حلال/i
 
-export function analyze(text) {
+// "alcohol-free" must not be flagged as alcohol
+const ALC_FREE = /\balcohol[- ]free\b|\bnon[- ]?alcoholic\b|\b0(\.0)?\s?% alcohol\b|خالٍ? من الكحول|بدون كحول/gi
+
+/** trusted=false means the text may be in a language we can't read, so "clean" is not a safe answer */
+export function analyze(text, { trusted = true } = {}) {
+  const clean = String(text || '').replace(ALC_FREE, ' ')
   const found = []
   const seen = new Set()
-  for (const r of RULES) if (r.re.test(text) && !seen.has(r.id)) { seen.add(r.id); found.push(r) }
+  for (const r of RULES) if (r.re.test(clean) && !seen.has(r.id)) { seen.add(r.id); found.push(r) }
   const bad = found.some((f) => f.s === 'haram')
   const doubt = found.some((f) => f.s === 'doubtful')
-  const v = bad ? 'bad' : doubt ? 'warn' : text.trim().length > 3 ? 'ok' : 'unknown'
-  return { found, v, cert: HALAL_RE.test(text) }
+  const v = bad ? 'bad' : doubt ? 'warn' : clean.trim().length > 3 && trusted ? 'ok' : 'unknown'
+  return { found, v, cert: HALAL_RE.test(clean) }
 }
