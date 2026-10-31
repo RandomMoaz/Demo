@@ -60,7 +60,8 @@ export const SITES = [
 // ingredient knowledge base (haram / doubtful)
 export const RULES = [
   {
-    id: 'pork', s: 'haram', re: /\b(pork|porcine|swine|bacon|ham|lard|prosciutto|chorizo|pancetta|gammon|pig|hog|porc|schwein|schweinefleisch|cerdo)\b|خنزير/i,
+    // Arabic pattern tolerates OCR mix-ups between dotted/undotted letters (خ/ح/ج, ن/ب/ت/ث, ز/ر)
+    id: 'pork', s: 'haram', re: /\b(pork|porcine|swine|bacon|ham|lard|prosciutto|chorizo|pancetta|gammon|pig|hog|porc|schwein|schweinefleisch|cerdo)\b|[خحج][نبتث][زر][يى]ر/i,
     n: { en: 'Pork / pig-derived', ar: 'خنزير', de: 'Schwein / vom Schwein', fr: 'Porc / dérivé du porc', es: 'Cerdo / derivado del cerdo', ja: '豚肉・豚由来' },
     w: {
       en: 'Pork and anything from pigs is impermissible.',

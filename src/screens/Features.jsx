@@ -4,6 +4,7 @@ import { analyze, pick } from '../lib/data'
 import { Anim } from '../components/Lottie'
 import BarcodeCam from '../components/BarcodeCam'
 import IngredientOCR from '../components/IngredientOCR'
+import { OCR_BLOCK, OCR_TRUST } from '../lib/ocrPrep'
 
 const Back = ({ onClick }) => (
   <button className="back-ic" onClick={onClick} aria-label="back">
@@ -77,7 +78,7 @@ export function Scanner() {
               ? <IngredientOCR lang={lang} onResult={({ text: tx, conf }) => { setText(tx); setOcrConf(conf) }} />
               : <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{t.pasteLead}</p>}
             <textarea className="paste" value={text} onChange={(e) => { setText(e.target.value); setOcrConf(null) }} placeholder="Sugar, palm oil, gelatin, soy lecithin, mono- and diglycerides…" />
-            <button className="btn block" style={{ marginTop: 12 }} onClick={() => show(tab === 'photo' ? 'Photo ingredients' : 'Pasted ingredients', text, ocrConf == null || ocrConf >= 70)}>{t.analyze}</button>
+            <button className="btn block" style={{ marginTop: 12 }} disabled={!text.trim() || (ocrConf != null && ocrConf < OCR_BLOCK)} onClick={() => show(tab === 'photo' ? 'Photo ingredients' : 'Pasted ingredients', text, ocrConf == null || ocrConf >= OCR_TRUST)}>{t.analyze}</button>
           </>
         )}
 

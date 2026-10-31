@@ -757,3 +757,8 @@ body:has(.site-root){ display:block; background:var(--bg); }
 label.btn.disabled{ opacity:.55; pointer-events:none; }
 .ocr-bar{ display:block; height:4px; margin-top:6px; border-radius:2px; background:rgba(128,128,128,.25); overflow:hidden; }
 .ocr-bar i{ display:block; height:100%; background:var(--accent, #2e8b6a); transition:width .2s; }
+
+.btn:disabled{ opacity:.5; cursor:not-allowed; }
+.ocr-langs{ display:flex; gap:6px; margin-bottom:10px; }
+.ocr-langs button{ flex:1; min-height:34px; border-radius:10px; border:1px solid rgba(128,128,128,.35); background:transparent; color:inherit; font:inherit; font-size:12px; }
+.ocr-langs button.on{ border-color:var(--accent, #2e8b6a); color:var(--accent, #2e8b6a); font-weight:600; }
