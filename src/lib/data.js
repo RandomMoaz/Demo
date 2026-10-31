@@ -60,7 +60,8 @@ export const SITES = [
 // ingredient knowledge base (haram / doubtful)
 export const RULES = [
   {
-    id: 'pork', s: 'haram', re: /\b(pork|porcine|swine|bacon|ham|lard|prosciutto|chorizo)\b|خنزير/i,
+    // Arabic pattern tolerates OCR mix-ups between dotted/undotted letters (خ/ح/ج, ن/ب/ت/ث, ز/ر)
+    id: 'pork', s: 'haram', re: /\b(pork|porcine|swine|bacon|ham|lard|prosciutto|chorizo|pancetta|gammon|pig|hog|porc|schwein|schweinefleisch|cerdo)\b|[خحج][نبتث][زر][يى]ر/i,
     n: { en: 'Pork / pig-derived', ar: 'خنزير', de: 'Schwein / vom Schwein', fr: 'Porc / dérivé du porc', es: 'Cerdo / derivado del cerdo', ja: '豚肉・豚由来' },
     w: {
       en: 'Pork and anything from pigs is impermissible.',
@@ -72,7 +73,7 @@ export const RULES = [
     },
   },
   {
-    id: 'alcohol', s: 'haram', re: /\b(alcohol|ethanol|wine|beer|rum|liqueur|brandy)\b|كحول|خمر/i,
+    id: 'alcohol', s: 'haram', re: /\b(alcohol|alcool|alkohol|ethanol|wine|beer|rum|liqueur|brandy|vodka|whisky|whiskey|tequila|champagne|sake|mirin|sherry|gin)\b|كحول|خمر|نبيذ|ويسكي|بيرة|فودكا/i,
     n: { en: 'Alcohol / intoxicant', ar: 'كحول', de: 'Alkohol / Rauschmittel', fr: 'Alcool / enivrant', es: 'Alcohol / embriagante', ja: 'アルコール・酩酊物' },
     w: {
       en: 'Drinking alcohol and added ethanol are impermissible.',
@@ -84,7 +85,7 @@ export const RULES = [
     },
   },
   {
-    id: 'gelatin', s: 'doubtful', re: /\b(gelatin|gelatine)\b|جيلاتين|جلاتين/i,
+    id: 'gelatin', s: 'doubtful', certOk: true, re: /\b(gelatin|gelatine|gélatine|gelatina)\b|جيلاتين|جلاتين/i,
     n: { en: 'Gelatin', ar: 'جيلاتين', de: 'Gelatine', fr: 'Gélatine', es: 'Gelatina', ja: 'ゼラチン' },
     w: {
       en: 'Usually pork or non-halal beef. Fine only from a halal-certified or fish source — verify.',
@@ -96,7 +97,7 @@ export const RULES = [
     },
   },
   {
-    id: 'rennet', s: 'doubtful', re: /\b(rennet|rennin)\b|أنفحة|منفحة/i,
+    id: 'rennet', s: 'doubtful', certOk: true, re: /\b(rennet|rennin)\b|أنفحة|منفحة/i,
     n: { en: 'Rennet (in cheese)', ar: 'أنفحة', de: 'Lab (im Käse)', fr: 'Présure (dans le fromage)', es: 'Cuajo (en el queso)', ja: 'レンネット（チーズ）' },
     w: {
       en: 'Animal rennet only fine if from a halal-slaughtered animal; microbial is fine.',
@@ -120,8 +121,8 @@ export const RULES = [
     },
   },
   {
-    id: 'mono', s: 'doubtful', re: /\bmono-?\s*(and|&)?\s*-?diglycerides?\b|E ?47[12]/i,
-    n: { en: 'Mono/di-glycerides (E471/2)', ar: 'دهون مستحلبة E471', de: 'Mono-/Diglyceride (E471/2)', fr: 'Mono/diglycérides (E471/2)', es: 'Mono/diglicéridos (E471/2)', ja: 'モノ・ジグリセリド（E471/2）' },
+    id: 'mono', s: 'doubtful', re: /\bmono-?\s*(and|&)?\s*-?diglycerides?\b|\bE ?471\b/i,
+    n: { en: 'Mono/di-glycerides (E471)', ar: 'دهون مستحلبة E471', de: 'Mono-/Diglyceride (E471)', fr: 'Mono/diglycérides (E471)', es: 'Mono/diglicéridos (E471)', ja: 'モノ・ジグリセリド（E471）' },
     w: {
       en: 'Emulsifiers that can be plant or animal fat — source matters.',
       ar: 'مستحلبات قد تكون دهنًا نباتيًا أو حيوانيًا — المصدر مهم.',
@@ -143,6 +144,71 @@ export const RULES = [
       ja: '動物性レンネットを使う場合のみ疑わしく、多くは問題ありません。',
     },
   },
+  {
+    id: 'shellac', s: 'doubtful', re: /\b(shellac|confectioner'?s glaze)\b|E ?904/i,
+    n: { en: 'Shellac (E904)', ar: 'شمع اللاك E904' },
+    w: { en: 'A resin secreted by insects; some scholars permit it, others treat it as doubtful.', ar: 'مادة راتنجية تفرزها الحشرات؛ أجازها بعض العلماء وتوقّف فيها آخرون.' },
+  },
+  {
+    id: 'cysteine', s: 'doubtful', re: /\bL-?\s?cysteine\b|E ?920/i,
+    n: { en: 'L-cysteine (E920)', ar: 'إل-سيستين E920' },
+    w: { en: 'Often made from animal hair or feathers (sometimes human or pig) — source matters.', ar: 'كثيرًا ما تُستخرج من شعر أو ريش الحيوان (وأحيانًا من الخنزير) — المصدر مهم.' },
+  },
+  {
+    id: 'glycerin', s: 'doubtful', re: /\b(glycerin|glycerine|glycerol)\b|E ?422|جلسرين|غليسرين/i,
+    n: { en: 'Glycerin (E422)', ar: 'جلسرين E422' },
+    w: { en: 'Can be plant-based or animal-based — source matters.', ar: 'قد يكون نباتيًا أو حيوانيًا — المصدر مهم.' },
+  },
+  {
+    id: 'blood', s: 'haram', re: /\b(blood|blood plasma)\b|(^|\s)دم(\s|$)/i,
+    n: { en: 'Blood / blood plasma', ar: 'دم' },
+    w: { en: 'Blood is impermissible.', ar: 'الدم المسفوح محرّم.' },
+  },
+  {
+    id: 'meat', s: 'doubtful', certOk: true, re: /\b(beef|chicken|lamb|mutton|turkey|veal|duck|meat)\b|لحم|دجاج|بقر|غنم|ضأن/i,
+    n: { en: 'Meat or poultry', ar: 'لحم أو دواجن' },
+    w: { en: 'Halal only if slaughtered according to Islamic rules — look for halal certification.', ar: 'لا يحلّ إلا إن كان مذكّى على الطريقة الشرعية — ابحث عن شهادة حلال.' },
+  },
+  {
+    id: 'animalfat', s: 'doubtful', certOk: true, re: /\b(tallow|suet|dripping|animal (fat|fats|shortening|oil))\b|شحم|دهون حيوانية/i,
+    n: { en: 'Animal fat', ar: 'دهن حيواني' },
+    w: { en: 'Could come from pork or from non-halal slaughter — verify the source.', ar: 'قد يكون من الخنزير أو من ذبيحة غير مذكّاة — تحقّق من المصدر.' },
+  },
+  {
+    id: 'enzymes', s: 'doubtful', certOk: true, re: /\b(pepsin|lipase|pancreatin|trypsin|animal enzymes?)\b/i,
+    n: { en: 'Enzymes (possibly animal)', ar: 'إنزيمات (قد تكون حيوانية)' },
+    w: { en: 'Can be animal-derived (sometimes from pigs) or microbial — verify the source.', ar: 'قد تكون حيوانية (أحيانًا من الخنزير) أو ميكروبية — تحقّق من المصدر.' },
+  },
+  {
+    id: 'inosinate', s: 'doubtful', re: /\bE ?(627|631|635)\b|\b(disodium (inosinate|guanylate|5'?-ribonucleotides?)|inosinate)\b/i,
+    n: { en: 'Flavour enhancer (E627/E631/E635)', ar: 'محسّن نكهة E631' },
+    w: { en: 'Often made from meat or fish — source matters.', ar: 'كثيرًا ما يُستخرج من اللحم أو السمك — المصدر مهم.' },
+  },
+  {
+    id: 'bonephos', s: 'doubtful', re: /\bE ?542\b|\bbone (phosphate|char|meal)\b/i,
+    n: { en: 'Bone phosphate (E542)', ar: 'فوسفات العظام E542' },
+    w: { en: 'Made from animal bones — source matters.', ar: 'يُصنع من عظام الحيوان — المصدر مهم.' },
+  },
+  {
+    id: 'collagen', s: 'doubtful', certOk: true, re: /\bcollagen\b|كولاجين/i,
+    n: { en: 'Collagen', ar: 'كولاجين' },
+    w: { en: 'Usually from pork or non-halal beef — verify the source.', ar: 'غالبًا من الخنزير أو بقر غير مذكّى — تحقّق من المصدر.' },
+  },
+  {
+    id: 'fatty', s: 'doubtful', re: /\bE ?(470[ab]?|472[a-f]?|473|474|475|477|481|482|491|492|493|494|495|570)\b|\b(stearic acid|magnesium stearate|sorbitan (mono|tri)stearate)\b/i,
+    n: { en: 'Fatty-acid derivatives (E470–E495, E570)', ar: 'مشتقات الأحماض الدهنية' },
+    w: { en: 'Can be plant or animal fat — source matters.', ar: 'قد تكون من دهن نباتي أو حيواني — المصدر مهم.' },
+  },
+  {
+    id: 'vanilla', s: 'doubtful', re: /\bvanilla extract\b|مستخلص الفانيليا/i,
+    n: { en: 'Vanilla extract', ar: 'مستخلص الفانيليا' },
+    w: { en: 'Usually made with alcohol as the solvent — check if alcohol-free.', ar: 'يُستخلص عادةً بالكحول — تحقّق إن كان خاليًا منه.' },
+  },
+  {
+    id: 'winevinegar', s: 'doubtful', re: /WINEVINEGAR/,
+    n: { en: 'Wine vinegar', ar: 'خل النبيذ' },
+    w: { en: 'Scholars differ on vinegar made from wine — treat as doubtful.', ar: 'اختلف العلماء في خلّ الخمر — يُعدّ مشبوهًا.' },
+  },
 ]
 
 // pick a translated field from a {en, ar, de, fr, es, ja} object, falling back to English
@@ -150,12 +216,21 @@ export const pick = (o, lang) => (o && (o[lang] || o.en)) || ''
 
 export const HALAL_RE = /\bhalal\b|حلال/i
 
-export function analyze(text) {
+// phrases that look risky but are fine — removed before matching
+const ALC_FREE = /\balcohol[- ]free\b|\bnon[- ]?alcoholic\b|\b0(\.0)?\s?% alcohol\b|خالٍ? من الكحول|بدون كحول/gi
+const SAFE = /\b(fish|marine|vegetable|plant|halal) gelatin(e)?\b|\b(vegetable|microbial|plant)[- ]?(based )?rennet\b|\b(vegetable|plant)(-based)? glycerin(e)?\b|\bblood orange\b/gi
+const NOT_HALAL = /\b(non|not)[- ]?halal\b|غير حلال/i
+
+/** trusted=false means the text may be unreadable or in an unknown language, so "clean" is not a safe answer */
+export function analyze(text, { trusted = true } = {}) {
+  const clean = String(text || '').replace(ALC_FREE, ' ').replace(SAFE, ' ')
+    .replace(/\b(wine|sherry|balsamic) vinegar\b/gi, ' WINEVINEGAR ')
+  // a "halal" claim in the text only relaxes the slaughter/source rules (certOk); haram items always count
+  const cert = HALAL_RE.test(clean) && !NOT_HALAL.test(clean)
   const found = []
-  const seen = new Set()
-  for (const r of RULES) if (r.re.test(text) && !seen.has(r.id)) { seen.add(r.id); found.push(r) }
+  for (const r of RULES) if (r.re.test(clean) && !(r.certOk && cert)) found.push(r)
   const bad = found.some((f) => f.s === 'haram')
   const doubt = found.some((f) => f.s === 'doubtful')
-  const v = bad ? 'bad' : doubt ? 'warn' : text.trim().length > 3 ? 'ok' : 'unknown'
-  return { found, v, cert: HALAL_RE.test(text) }
+  const v = bad ? 'bad' : doubt ? 'warn' : clean.trim().length > 3 && trusted ? 'ok' : 'unknown'
+  return { found, v, cert }
 }
