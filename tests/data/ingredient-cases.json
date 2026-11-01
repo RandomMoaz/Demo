@@ -1,0 +1,793 @@
+[
+ {
+  "id": "snacks-01",
+  "category": "snacks",
+  "text": "Potato, sunflower oil, salt",
+  "expected": "ok"
+ },
+ {
+  "id": "snacks-02",
+  "category": "snacks",
+  "text": "Corn, palm oil, salt, paprika, onion powder, sugar",
+  "expected": "ok"
+ },
+ {
+  "id": "snacks-03",
+  "category": "snacks",
+  "text": "Wheat flour, vegetable oil, salt, yeast extract, flavour enhancer (E621)",
+  "expected": "ok"
+ },
+ {
+  "id": "snacks-04",
+  "category": "snacks",
+  "text": "Potato, vegetable oil, cheese powder (milk, rennet), salt",
+  "expected": "warn",
+  "note": "rennet source not stated"
+ },
+ {
+  "id": "snacks-05",
+  "category": "snacks",
+  "text": "Peanuts, salt, sugar, glucose syrup, E471",
+  "expected": "warn",
+  "note": "E471 source not stated"
+ },
+ {
+  "id": "snacks-06",
+  "category": "snacks",
+  "text": "Rice, seaweed, sugar, soy sauce, mirin",
+  "expected": "bad",
+  "note": "mirin contains alcohol",
+  "debatable": true
+ },
+ {
+  "id": "candy-01",
+  "category": "candy",
+  "text": "Sugar, glucose syrup, gelatin, citric acid, flavouring",
+  "expected": "warn",
+  "note": "gelatin source not stated"
+ },
+ {
+  "id": "candy-02",
+  "category": "candy",
+  "text": "Sugar, glucose syrup, pectin, citric acid, colour (E120)",
+  "expected": "warn",
+  "note": "carmine is insect-derived"
+ },
+ {
+  "id": "candy-03",
+  "category": "candy",
+  "text": "Sugar, glucose syrup, fish gelatin, citric acid",
+  "expected": "ok",
+  "note": "fish gelatin"
+ },
+ {
+  "id": "candy-04",
+  "category": "candy",
+  "text": "Sugar, cocoa butter, cocoa mass, milk powder, emulsifier (soy lecithin), vanilla",
+  "expected": "ok"
+ },
+ {
+  "id": "candy-05",
+  "category": "candy",
+  "text": "Sugar, glucose syrup, beef gelatin (halal certified), acid",
+  "expected": "ok",
+  "note": "certified source stated"
+ },
+ {
+  "id": "candy-06",
+  "category": "candy",
+  "text": "Sugar, shellac, carnauba wax, glucose syrup",
+  "expected": "warn"
+ },
+ {
+  "id": "candy-07",
+  "category": "candy",
+  "text": "Sugar, pork gelatin",
+  "expected": "bad"
+ },
+ {
+  "id": "candy-08",
+  "category": "candy",
+  "text": "Sugar, glucose, confectioner's glaze",
+  "expected": "warn"
+ },
+ {
+  "id": "candy-09",
+  "category": "candy",
+  "text": "Gelatin-free gummies: sugar, pectin, apple juice",
+  "expected": "ok",
+  "note": "free-from statement",
+  "knownGap": "negation"
+ },
+ {
+  "id": "candy-10",
+  "category": "candy",
+  "text": "Sugar, palm oil, cocoa, milk, emulsifier (E322), vanillin",
+  "expected": "ok"
+ },
+ {
+  "id": "sauces-01",
+  "category": "sauces",
+  "text": "Tomato paste, sugar, vinegar, salt, spices",
+  "expected": "ok"
+ },
+ {
+  "id": "sauces-02",
+  "category": "sauces",
+  "text": "Water, soybean, wheat, salt, alcohol",
+  "expected": "bad",
+  "note": "brewing alcohol listed as an ingredient",
+  "debatable": true
+ },
+ {
+  "id": "sauces-03",
+  "category": "sauces",
+  "text": "Water, tomato, red wine, onion, garlic",
+  "expected": "bad"
+ },
+ {
+  "id": "sauces-04",
+  "category": "sauces",
+  "text": "Water, white wine vinegar, mustard seed, salt",
+  "expected": "warn",
+  "note": "scholars differ on vinegar made from wine"
+ },
+ {
+  "id": "sauces-05",
+  "category": "sauces",
+  "text": "Soybean oil, egg yolk, vinegar, salt, mustard",
+  "expected": "ok"
+ },
+ {
+  "id": "sauces-06",
+  "category": "sauces",
+  "text": "Water, anchovies, vinegar, molasses, sugar, onion",
+  "expected": "ok",
+  "note": "fish is fine"
+ },
+ {
+  "id": "sauces-07",
+  "category": "sauces",
+  "text": "Cream, parmesan cheese (milk, salt, rennet), butter, garlic",
+  "expected": "warn"
+ },
+ {
+  "id": "sauces-08",
+  "category": "sauces",
+  "text": "Tomato, sugar, vinegar, salt, vodka",
+  "expected": "bad"
+ },
+ {
+  "id": "sauces-09",
+  "category": "sauces",
+  "text": "Contains no pork or alcohol: tomato, basil, salt",
+  "expected": "ok",
+  "note": "free-from statement",
+  "knownGap": "negation"
+ },
+ {
+  "id": "dairy-01",
+  "category": "dairy",
+  "text": "Pasteurised milk",
+  "expected": "ok"
+ },
+ {
+  "id": "dairy-02",
+  "category": "dairy",
+  "text": "Milk, live yoghurt cultures, sugar, modified starch",
+  "expected": "ok"
+ },
+ {
+  "id": "dairy-03",
+  "category": "dairy",
+  "text": "Milk, salt, microbial rennet",
+  "expected": "ok"
+ },
+ {
+  "id": "dairy-04",
+  "category": "dairy",
+  "text": "Milk, salt, animal rennet",
+  "expected": "warn"
+ },
+ {
+  "id": "dairy-05",
+  "category": "dairy",
+  "text": "Milk, cream, sugar, stabiliser (E407), gelatin",
+  "expected": "warn"
+ },
+ {
+  "id": "dairy-06",
+  "category": "dairy",
+  "text": "Milk, salt, cheese cultures, lipase",
+  "expected": "warn",
+  "note": "lipase source not stated"
+ },
+ {
+  "id": "dairy-07",
+  "category": "dairy",
+  "text": "Milk, salt, cheese cultures, microbial lipase",
+  "expected": "ok",
+  "note": "source stated as microbial",
+  "knownGap": "source-qualifier"
+ },
+ {
+  "id": "dairy-08",
+  "category": "dairy",
+  "text": "Skimmed milk powder, vegetable fat, emulsifier (E471 from palm oil)",
+  "expected": "ok",
+  "note": "source stated as vegetable",
+  "knownGap": "source-qualifier"
+ },
+ {
+  "id": "dairy-09",
+  "category": "dairy",
+  "text": "Milk, sugar, cocoa, E1442",
+  "expected": "ok"
+ },
+ {
+  "id": "dairy-10",
+  "category": "dairy",
+  "text": "حليب، ملح، منفحة",
+  "expected": "warn",
+  "note": "Arabic: rennet"
+ },
+ {
+  "id": "bakery-01",
+  "category": "bakery",
+  "text": "Wheat flour, water, yeast, salt",
+  "expected": "ok"
+ },
+ {
+  "id": "bakery-02",
+  "category": "bakery",
+  "text": "Wheat flour, sugar, margarine, eggs, baking powder",
+  "expected": "ok"
+ },
+ {
+  "id": "bakery-03",
+  "category": "bakery",
+  "text": "Wheat flour, lard, salt",
+  "expected": "bad"
+ },
+ {
+  "id": "bakery-04",
+  "category": "bakery",
+  "text": "Wheat flour, butter, sugar, dextrose, emulsifier (E472e)",
+  "expected": "warn"
+ },
+ {
+  "id": "bakery-05",
+  "category": "bakery",
+  "text": "Flour, sugar, eggs, rum, raisins",
+  "expected": "bad",
+  "note": "rum as an ingredient"
+ },
+ {
+  "id": "bakery-06",
+  "category": "bakery",
+  "text": "Flour, sugar, rum flavour (non-alcoholic)",
+  "expected": "ok",
+  "note": "non-alcoholic flavour",
+  "knownGap": "negation"
+ },
+ {
+  "id": "bakery-07",
+  "category": "bakery",
+  "text": "Flour, sugar, L-cysteine (E920), yeast",
+  "expected": "warn"
+ },
+ {
+  "id": "bakery-08",
+  "category": "bakery",
+  "text": "Flour, water, salt, E471, E481, vegetable oil",
+  "expected": "warn"
+ },
+ {
+  "id": "bakery-09",
+  "category": "bakery",
+  "text": "Flour, sugar, vegetable shortening, natural flavours",
+  "expected": "ok"
+ },
+ {
+  "id": "bakery-10",
+  "category": "bakery",
+  "text": "Flour, bacon bits, cheese",
+  "expected": "bad"
+ },
+ {
+  "id": "bakery-11",
+  "category": "bakery",
+  "text": "Wheat flour, vanilla extract, sugar, butter",
+  "expected": "warn",
+  "note": "vanilla extract is usually alcohol-based"
+ },
+ {
+  "id": "bakery-12",
+  "category": "bakery",
+  "text": "Peanut oil, lard-free pastry flour, salt",
+  "expected": "ok",
+  "note": "free-from statement",
+  "knownGap": "negation"
+ },
+ {
+  "id": "meat-01",
+  "category": "meat",
+  "text": "Beef, water, salt, spices",
+  "expected": "warn",
+  "note": "slaughter method unknown"
+ },
+ {
+  "id": "meat-02",
+  "category": "meat",
+  "text": "Halal chicken breast, salt, spices",
+  "expected": "ok"
+ },
+ {
+  "id": "meat-03",
+  "category": "meat",
+  "text": "Chicken, water, salt, starch, flavour enhancer (E621)",
+  "expected": "warn"
+ },
+ {
+  "id": "meat-04",
+  "category": "meat",
+  "text": "Pork, salt, sugar, spices",
+  "expected": "bad"
+ },
+ {
+  "id": "meat-05",
+  "category": "meat",
+  "text": "Mechanically separated chicken, rusk, salt",
+  "expected": "warn"
+ },
+ {
+  "id": "meat-06",
+  "category": "meat",
+  "text": "Beef, pork fat, salt",
+  "expected": "bad"
+ },
+ {
+  "id": "meat-07",
+  "category": "meat",
+  "text": "Turkey ham, water, salt",
+  "expected": "warn",
+  "note": "turkey meat, not pork; slaughter unknown",
+  "knownGap": "false-positive"
+ },
+ {
+  "id": "meat-08",
+  "category": "meat",
+  "text": "Lamb, rosemary, salt (halal certified)",
+  "expected": "ok"
+ },
+ {
+  "id": "meat-09",
+  "category": "meat",
+  "text": "Beef sausage: beef, water, spices, sheep casing",
+  "expected": "warn"
+ },
+ {
+  "id": "meat-10",
+  "category": "meat",
+  "text": "Chicken flavour (no meat), salt, yeast extract",
+  "expected": "ok",
+  "note": "flavour with no meat",
+  "knownGap": "negation"
+ },
+ {
+  "id": "meat-11",
+  "category": "meat",
+  "text": "Sausage: pork-free beef sausage (halal)",
+  "expected": "ok",
+  "note": "free-from plus certified",
+  "knownGap": "negation"
+ },
+ {
+  "id": "beverages-01",
+  "category": "beverages",
+  "text": "Water, sugar, carbon dioxide, caramel colour, phosphoric acid, caffeine",
+  "expected": "ok"
+ },
+ {
+  "id": "beverages-02",
+  "category": "beverages",
+  "text": "Water, apple juice from concentrate, ascorbic acid",
+  "expected": "ok"
+ },
+ {
+  "id": "beverages-03",
+  "category": "beverages",
+  "text": "Beer, lemon juice, sugar",
+  "expected": "bad"
+ },
+ {
+  "id": "beverages-04",
+  "category": "beverages",
+  "text": "Water, sugar, grape juice, natural flavour",
+  "expected": "ok"
+ },
+ {
+  "id": "beverages-05",
+  "category": "beverages",
+  "text": "Water, sugar, orange juice, carmine (E120)",
+  "expected": "warn"
+ },
+ {
+  "id": "beverages-06",
+  "category": "beverages",
+  "text": "Coffee, milk, sugar",
+  "expected": "ok"
+ },
+ {
+  "id": "beverages-07",
+  "category": "beverages",
+  "text": "Ethanol-free vanilla flavour, sugar",
+  "expected": "ok",
+  "note": "free-from statement",
+  "knownGap": "negation"
+ },
+ {
+  "id": "beverages-08",
+  "category": "beverages",
+  "text": "Brewers yeast, water, sugar",
+  "expected": "ok",
+  "note": "yeast, not alcohol"
+ },
+ {
+  "id": "meals-01",
+  "category": "meals",
+  "text": "Rice, chicken, sunflower oil, salt, spices, onion",
+  "expected": "warn"
+ },
+ {
+  "id": "meals-02",
+  "category": "meals",
+  "text": "Pasta (wheat, egg), tomato sauce, cheese (milk, salt, rennet)",
+  "expected": "warn"
+ },
+ {
+  "id": "meals-03",
+  "category": "meals",
+  "text": "Noodles, seasoning: salt, MSG, sugar, vegetable oil, onion",
+  "expected": "ok"
+ },
+ {
+  "id": "meals-04",
+  "category": "meals",
+  "text": "Pizza: flour, mozzarella, tomato, pepperoni (pork, beef), olive oil",
+  "expected": "bad"
+ },
+ {
+  "id": "meals-05",
+  "category": "meals",
+  "text": "Lasagne: beef, pasta, bechamel, tomato",
+  "expected": "warn"
+ },
+ {
+  "id": "meals-06",
+  "category": "meals",
+  "text": "Falafel: chickpeas, onion, parsley, sesame, salt, vegetable oil",
+  "expected": "ok"
+ },
+ {
+  "id": "meals-07",
+  "category": "meals",
+  "text": "Rice, vegetables, soy sauce, sesame oil",
+  "expected": "ok"
+ },
+ {
+  "id": "meals-08",
+  "category": "meals",
+  "text": "Instant soup: salt, maltodextrin, flavour enhancers E627 E631, onion",
+  "expected": "warn"
+ },
+ {
+  "id": "meals-09",
+  "category": "meals",
+  "text": "Fish, salt, olive oil",
+  "expected": "ok"
+ },
+ {
+  "id": "meals-10",
+  "category": "meals",
+  "text": "Honey, royal jelly",
+  "expected": "ok"
+ },
+ {
+  "id": "meals-11",
+  "category": "meals",
+  "text": "Eggs, sugar, vanilla",
+  "expected": "ok"
+ },
+ {
+  "id": "additives-01",
+  "category": "additives",
+  "text": "E120",
+  "expected": "warn"
+ },
+ {
+  "id": "additives-02",
+  "category": "additives",
+  "text": "E441",
+  "expected": "warn",
+  "note": "E441 is gelatin",
+  "knownGap": "lexicon"
+ },
+ {
+  "id": "additives-03",
+  "category": "additives",
+  "text": "E904",
+  "expected": "warn"
+ },
+ {
+  "id": "additives-04",
+  "category": "additives",
+  "text": "E920",
+  "expected": "warn"
+ },
+ {
+  "id": "additives-05",
+  "category": "additives",
+  "text": "E542",
+  "expected": "warn"
+ },
+ {
+  "id": "additives-06",
+  "category": "additives",
+  "text": "E100, E150a, E202",
+  "expected": "ok"
+ },
+ {
+  "id": "additives-07",
+  "category": "additives",
+  "text": "E422",
+  "expected": "warn",
+  "note": "glycerol source not stated"
+ },
+ {
+  "id": "additives-08",
+  "category": "additives",
+  "text": "E471 (vegetable)",
+  "expected": "ok",
+  "note": "source stated",
+  "knownGap": "source-qualifier"
+ },
+ {
+  "id": "additives-09",
+  "category": "additives",
+  "text": "E901, E903",
+  "expected": "ok",
+  "note": "waxes"
+ },
+ {
+  "id": "additives-10",
+  "category": "additives",
+  "text": "E252, E250",
+  "expected": "ok"
+ },
+ {
+  "id": "additives-11",
+  "category": "additives",
+  "text": "E631",
+  "expected": "warn"
+ },
+ {
+  "id": "additives-12",
+  "category": "additives",
+  "text": "Sugar, carmine",
+  "expected": "warn"
+ },
+ {
+  "id": "additives-13",
+  "category": "additives",
+  "text": "Sugar, cochineal",
+  "expected": "warn"
+ },
+ {
+  "id": "additives-14",
+  "category": "additives",
+  "text": "Water, sugar, glycerol",
+  "expected": "warn"
+ },
+ {
+  "id": "additives-15",
+  "category": "additives",
+  "text": "Water, vegetable glycerin, sugar",
+  "expected": "ok"
+ },
+ {
+  "id": "additives-16",
+  "category": "additives",
+  "text": "Sugar, bone char filtered",
+  "expected": "warn"
+ },
+ {
+  "id": "additives-17",
+  "category": "additives",
+  "text": "Sugar, collagen casing",
+  "expected": "warn"
+ },
+ {
+  "id": "additives-18",
+  "category": "additives",
+  "text": "Sugar, pig skin collagen",
+  "expected": "bad"
+ },
+ {
+  "id": "languages-01",
+  "category": "languages",
+  "text": "سكر، دقيق قمح، زيت نخيل، ملح",
+  "expected": "ok"
+ },
+ {
+  "id": "languages-02",
+  "category": "languages",
+  "text": "سكر، جيلاتين، حمض الستريك",
+  "expected": "warn"
+ },
+ {
+  "id": "languages-03",
+  "category": "languages",
+  "text": "لحم بقر، ملح، بهارات",
+  "expected": "warn"
+ },
+ {
+  "id": "languages-04",
+  "category": "languages",
+  "text": "دقيق، شحم الخنزير، ملح",
+  "expected": "bad"
+ },
+ {
+  "id": "languages-05",
+  "category": "languages",
+  "text": "نبيذ أحمر، طماطم، بصل",
+  "expected": "bad"
+ },
+ {
+  "id": "languages-06",
+  "category": "languages",
+  "text": "خالٍ من الخنزير: سكر، ملح، دقيق",
+  "expected": "ok",
+  "note": "Arabic: pork-free",
+  "knownGap": "negation"
+ },
+ {
+  "id": "languages-07",
+  "category": "languages",
+  "text": "سكر، فانيليا، كحول إيثيلي",
+  "expected": "bad"
+ },
+ {
+  "id": "languages-08",
+  "category": "languages",
+  "text": "Sucre, graisse de porc, sel",
+  "expected": "bad"
+ },
+ {
+  "id": "languages-09",
+  "category": "languages",
+  "text": "Farine, sucre, gélatine, sel",
+  "expected": "warn"
+ },
+ {
+  "id": "languages-10",
+  "category": "languages",
+  "text": "Zucker, Schweinefett, Salz",
+  "expected": "bad",
+  "note": "German: pork fat",
+  "knownGap": "lexicon"
+ },
+ {
+  "id": "languages-11",
+  "category": "languages",
+  "text": "Weizenmehl, Zucker, Gelatine",
+  "expected": "warn"
+ },
+ {
+  "id": "languages-12",
+  "category": "languages",
+  "text": "Harina, azúcar, manteca de cerdo",
+  "expected": "bad"
+ },
+ {
+  "id": "languages-13",
+  "category": "languages",
+  "text": "Sugar، ملح، gelatin",
+  "expected": "warn",
+  "note": "mixed languages"
+ },
+ {
+  "id": "edge-01",
+  "category": "edge",
+  "text": "",
+  "expected": "unknown",
+  "note": "empty input"
+ },
+ {
+  "id": "edge-02",
+  "category": "edge",
+  "text": "   ",
+  "expected": "unknown",
+  "note": "whitespace only"
+ },
+ {
+  "id": "edge-03",
+  "category": "edge",
+  "text": "ok",
+  "expected": "unknown",
+  "note": "too short to judge"
+ },
+ {
+  "id": "edge-04",
+  "category": "edge",
+  "text": "asdf qwer zxcv",
+  "expected": "unknown",
+  "note": "gibberish is not an ingredient list",
+  "knownGap": "not-an-ingredient-list"
+ },
+ {
+  "id": "edge-05",
+  "category": "edge",
+  "text": "Nutrition facts: energy 520 kJ, fat 4 g, protein 3 g",
+  "expected": "unknown",
+  "note": "no ingredient list",
+  "knownGap": "not-an-ingredient-list"
+ },
+ {
+  "id": "edge-06",
+  "category": "edge",
+  "text": "Ingredients: sugar, sugar, sugar, salt, salt",
+  "expected": "ok",
+  "note": "duplicates"
+ },
+ {
+  "id": "edge-07",
+  "category": "edge",
+  "text": "SUGAR, GELATIN",
+  "expected": "warn",
+  "note": "upper case"
+ },
+ {
+  "id": "edge-08",
+  "category": "edge",
+  "text": "sugar,gelatin",
+  "expected": "warn",
+  "note": "no spaces"
+ },
+ {
+  "id": "edge-09",
+  "category": "edge",
+  "text": "Sugar (gelatin), salt",
+  "expected": "warn",
+  "note": "inside parentheses"
+ },
+ {
+  "id": "edge-10",
+  "category": "edge",
+  "text": "Sugar; palm oil; PORK; salt",
+  "expected": "bad",
+  "note": "semicolons"
+ },
+ {
+  "id": "edge-11",
+  "category": "edge",
+  "text": "Chocolate (sugar, cocoa butter, emulsifier (E471, soy lecithin)), wafer",
+  "expected": "warn",
+  "note": "nested compound ingredient"
+ },
+ {
+  "id": "edge-12",
+  "category": "edge",
+  "text": "Biscuit 70% (wheat flour, sugar, palm oil, E471), cream 30% (sugar, gelatin)",
+  "expected": "warn",
+  "note": "percentages and compounds"
+ },
+ {
+  "id": "edge-13",
+  "category": "edge",
+  "text": "Gelatin free, alcohol free: sugar, pectin",
+  "expected": "ok",
+  "note": "free-from statement",
+  "knownGap": "negation"
+ }
+]
