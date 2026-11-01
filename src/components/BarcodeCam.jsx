@@ -1,21 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { DecodeHintType, BarcodeFormat } from '@zxing/library'
-
-/* GTIN check digit (EAN-8 / UPC-A / EAN-13). Rejects misreads before any network call. */
-export function validGtin(code) {
-  if (!/^\d+$/.test(code) || ![8, 12, 13].includes(code.length)) return false
-  const d = code.split('').map(Number)
-  const check = d.pop()
-  let sum = 0
-  for (let i = d.length - 1, w = 3; i >= 0; i--, w = 4 - w) sum += d[i] * w
-  return (10 - (sum % 10)) % 10 === check
-}
+import { parseScannedCode } from '../lib/scanCodes'
+import { decodeImage } from '../lib/barcodeDecode'
+import { scanFrame } from '../lib/frameScan'
 
 const MSG = {
   en: {
     open: 'Open camera', close: 'Close camera', starting: 'Starting camera…',
-    hint: 'Point the camera at the barcode and hold steady.',
+    pickImage: 'Choose a barcode image', readingImage: 'Reading the image…',
+    imgFail: 'No barcode could be read from this image. Use a sharper photo where the barcode fills more of the frame, or type the number.',
+    hint: 'Point the camera at the barcode or QR code and hold steady.',
+    qrLink: (h) => `This QR code is a link to a website (${h}), not a product code. We did not open it. Scan the product barcode, or paste the ingredients.`,
+    qrOther: 'This QR code does not contain a product code. Scan the product barcode, or paste the ingredients.',
     denied: 'Camera permission was denied. Allow it in the browser settings, or type the code below.',
     nocam: 'No camera was found on this device. Type the code below.',
     busy: 'The camera is in use by another app. Close it and try again.',
@@ -23,8 +20,12 @@ const MSG = {
     error: 'Could not start the camera. Type the code below.',
   },
   ar: {
-    open: 'افتح الكاميرا', close: 'اقفل الكاميرا', starting: 'جارٍ تشغيل الكاميرا…',
-    hint: 'وجّه الكاميرا للباركود وثبّتها.',
+    open: 'افتح الكاميرا', close: 'اقفل الكاميرا',
+    pickImage: 'اختر صورة باركود', readingImage: 'جارٍ قراءة الصورة…',
+    imgFail: 'ماقدرتش أقرا باركود من الصورة دي. استخدم صورة أوضح والباركود يملأ مساحة أكبر منها، أو اكتب الرقم.', starting: 'جارٍ تشغيل الكاميرا…',
+    hint: 'وجّه الكاميرا للباركود أو كود QR وثبّتها.',
+    qrLink: (h) => `كود QR ده رابط لموقع (${h}) وليس كود منتج. ما فتحناهوش. امسح باركود المنتج أو الصق المكونات.`,
+    qrOther: 'كود QR ده مفيهوش كود منتج. امسح باركود المنتج أو الصق المكونات.',
     denied: 'تم رفض إذن الكاميرا. اسمح بها من إعدادات المتصفح، أو اكتب الرقم بالأسفل.',
     nocam: 'مفيش كاميرا على الجهاز ده. اكتب الرقم بالأسفل.',
     busy: 'الكاميرا مستخدمة في تطبيق تاني. اقفله وجرّب تاني.',
@@ -34,7 +35,7 @@ const MSG = {
 }
 
 const hints = new Map([
-  [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A]],
+  [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.QR_CODE]],
   [DecodeHintType.TRY_HARDER, true],
 ])
 
@@ -43,9 +44,14 @@ export default function BarcodeCam({ lang = 'en', onCode }) {
   const videoRef = useRef(null)
   const controlsRef = useRef(null)
   const lastRef = useRef({ code: '', n: 0 })
+  const enhRef = useRef({ stop: true, timer: null }) // extra help loop for hard-to-read frames
+  const readRef = useRef(null) // always points at the latest handleRead
   const [state, setState] = useState('idle') // idle | starting | scanning | error key
+  const [note, setNote] = useState('') // shown when a QR code is not a product code or an image cannot be read
+  const [imgBusy, setImgBusy] = useState(false)
 
   const stop = useCallback(() => {
+    enhRef.current.stop = true; clearTimeout(enhRef.current.timer)
     try { controlsRef.current?.stop() } catch { /* already stopped */ }
     controlsRef.current = null
     const v = videoRef.current
@@ -53,27 +59,71 @@ export default function BarcodeCam({ lang = 'en', onCode }) {
     lastRef.current = { code: '', n: 0 }
   }, [])
 
+  // One place decides what a read means, whether it came from ZXing, the helper loop or the native detector.
+  const handleRead = (text, isQr) => {
+    const p = parseScannedCode(text)
+    // 1D barcodes that are not a valid product code are misreads: ignore silently
+    if (!isQr && p.kind !== 'gtin') return
+    // the same content must be read twice before we trust it
+    const key = p.kind === 'gtin' ? p.gtin : `${p.kind}:${p.host || ''}`
+    const last = lastRef.current
+    last.n = last.code === key ? last.n + 1 : 1
+    last.code = key
+    if (last.n < 2) return
+    stop(); setState('idle')
+    if (p.kind === 'gtin') onCode(p.gtin)
+    else setNote(p.kind === 'url' ? m.qrLink(p.host) : m.qrOther) // links are shown as text only, never opened
+  }
+  readRef.current = handleRead
+
+  /* Normal ZXing keeps running. If it has read nothing after ~1.2 s (barcode far, small or blurry), this loop adds:
+     the browser's native BarcodeDetector when it exists, and a sharpen/tilt/enlarge pass on the barcode region.
+     Everything is wrapped so a failure here can never break the normal scan. */
+  const startEnhancer = useCallback(() => {
+    const e = enhRef.current
+    e.stop = false
+    const t0 = Date.now()
+    let native = null
+    try { if ('BarcodeDetector' in window) native = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'qr_code'] }) } catch { native = null }
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    let n = 0
+    const loop = async () => {
+      if (e.stop) return
+      try {
+        const v = videoRef.current
+        if (v && v.readyState >= 2 && v.videoWidth) {
+          if (native) {
+            try { const found = await native.detect(v); if (found[0] && !e.stop) readRef.current(found[0].rawValue, found[0].format === 'qr_code') } catch { native = null }
+          }
+          if (!e.stop && Date.now() - t0 > 1200) {
+            const k = Math.min(1, 1280 / v.videoWidth) // the helper was tuned on 1280-wide frames
+            canvas.width = Math.round(v.videoWidth * k); canvas.height = Math.round(v.videoHeight * k)
+            ctx.drawImage(v, 0, 0, canvas.width, canvas.height)
+            const r = await scanFrame(ctx.getImageData(0, 0, canvas.width, canvas.height), { whole: ++n % 2 === 0 })
+            if (r && !e.stop) readRef.current(r.text, r.format === 'QR_CODE')
+          }
+        }
+      } catch { /* the normal pass is unaffected */ }
+      if (!e.stop) e.timer = setTimeout(loop, 250)
+    }
+    e.timer = setTimeout(loop, 400)
+  }, [])
+
   const start = useCallback(async () => {
     if (!window.isSecureContext) return setState('insecure')
     if (!navigator.mediaDevices?.getUserMedia) return setState('nocam')
-    setState('starting')
+    setState('starting'); setNote('')
     try {
-      const reader = new BrowserMultiFormatReader(hints)
+      // the library default is one attempt every 500 ms; 150 ms catches a sharp frame much sooner
+      const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 150, delayBetweenScanSuccess: 500 })
       controlsRef.current = await reader.decodeFromConstraints(
-        { video: { facingMode: { ideal: 'environment' } }, audio: false },
+        { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: 'continuous' }] }, audio: false },
         videoRef.current,
-        (result) => {
-          if (!result) return
-          const code = result.getText()
-          if (!validGtin(code)) return
-          // the same valid code must be read twice in a row before we trust it
-          const last = lastRef.current
-          last.n = last.code === code ? last.n + 1 : 1
-          last.code = code
-          if (last.n >= 2) { stop(); setState('idle'); onCode(code) }
-        }
+        (result) => { if (result) readRef.current(result.getText(), result.getBarcodeFormat() === BarcodeFormat.QR_CODE) }
       )
       setState('scanning')
+      startEnhancer()
     } catch (e) {
       stop()
       const n = e?.name
@@ -81,9 +131,35 @@ export default function BarcodeCam({ lang = 'en', onCode }) {
         : n === 'NotFoundError' || n === 'OverconstrainedError' ? 'nocam'
         : n === 'NotReadableError' ? 'busy' : 'error')
     }
-  }, [onCode, stop])
+  }, [stop, startEnhancer])
 
   useEffect(() => stop, [stop]) // release the camera when leaving the screen
+
+  // Read a barcode from a saved photo or screenshot (no camera needed)
+  async function readImage(file) {
+    if (!file) return
+    stop(); setState('idle'); setNote(''); setImgBusy(true)
+    const url = URL.createObjectURL(file)
+    try {
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url })
+      const k = Math.min(1, 3000 / Math.max(img.width, img.height)) // keep detail for small barcodes, cap memory
+      const c = document.createElement('canvas')
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k)
+      const ctx = c.getContext('2d', { willReadFrequently: true })
+      ctx.drawImage(img, 0, 0, c.width, c.height)
+      const d = ctx.getImageData(0, 0, c.width, c.height)
+      const r = await decodeImage({ data: d.data, width: c.width, height: c.height })
+      const p = r ? parseScannedCode(r.text) : null
+      if (p && p.kind === 'gtin') onCode(p.gtin)
+      else if (p && r.format === 'QR_CODE') setNote(p.kind === 'url' ? m.qrLink(p.host) : m.qrOther)
+      else setNote(m.imgFail)
+    } catch {
+      setNote(m.imgFail)
+    } finally {
+      URL.revokeObjectURL(url)
+      setImgBusy(false)
+    }
+  }
 
   const active = state === 'starting' || state === 'scanning'
   return (
@@ -95,10 +171,16 @@ export default function BarcodeCam({ lang = 'en', onCode }) {
       </div>
       {state === 'starting' && <p className="cam-note">{m.starting}</p>}
       {state === 'scanning' && <p className="cam-note">{m.hint}</p>}
+      {note && <p className="cam-note err">{note}</p>}
       {m[state] && !active && state !== 'idle' && <p className="cam-note err">{m[state]}</p>}
-      <button className="btn block" onClick={active ? () => { stop(); setState('idle') } : start}>
+      <button className="btn block" disabled={imgBusy} onClick={active ? () => { stop(); setState('idle') } : start}>
         {active ? m.close : m.open}
       </button>
+      <label className={`btn block${imgBusy ? ' disabled' : ''}`} style={{ marginTop: 8 }}>
+        {imgBusy ? m.readingImage : m.pickImage}
+        <input type="file" accept="image/*" hidden disabled={imgBusy}
+          onChange={(e) => { readImage(e.target.files?.[0]); e.target.value = '' }} />
+      </label>
     </div>
   )
 }
