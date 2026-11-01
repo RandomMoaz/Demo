@@ -112,7 +112,7 @@ export function Scanner() {
 
 /* ---------------- Alarm ---------------- */
 export function Alarm() {
-  const { t, go } = useApp()
+  const { t, go, back } = useApp()
   const [challenge, setChallenge] = useState(null)
   const [answer, setAnswer] = useState('')
   const [msg, setMsg] = useState(null)
@@ -157,7 +157,7 @@ export function Alarm() {
 
 /* ---------------- Map (Leaflet loaded on demand) ---------------- */
 export function MapScreen() {
-  const { t, go, loc, setLoc } = useApp()
+  const { t, go, back, loc, setLoc } = useApp()
   const [phase, setPhase] = useState(loc ? 'map' : 'gate')
   const [status, setStatus] = useState('')
   const mapRef = useRef(null)
@@ -230,7 +230,7 @@ export function MapScreen() {
 
 /* ---------------- Salah (MediaPipe loaded on demand) ---------------- */
 export function Salah() {
-  const { t, go } = useApp()
+  const { t, go, back } = useApp()
   const [started, setStarted] = useState(false)
   const [posture, setPosture] = useState('—')
   const videoRef = useRef(null)
