@@ -1,3 +1,4 @@
+import { parseIngredients } from './ingredients/parse'
 export const LANGS = [
   { id: 'en', mark: 'EN', native: 'English', hint: 'Learn Arabic through English' },
   { id: 'de', mark: 'DE', native: 'Deutsch', hint: 'Arabisch lernen auf Deutsch' },
@@ -216,21 +217,77 @@ export const pick = (o, lang) => (o && (o[lang] || o.en)) || ''
 
 export const HALAL_RE = /\bhalal\b|حلال/i
 
-// phrases that look risky but are fine — removed before matching
-const ALC_FREE = /\balcohol[- ]free\b|\bnon[- ]?alcoholic\b|\b0(\.0)?\s?% alcohol\b|خالٍ? من الكحول|بدون كحول/gi
-const SAFE = /\b(fish|marine|vegetable|plant|halal) gelatin(e)?\b|\b(vegetable|microbial|plant)[- ]?(based )?rennet\b|\b(vegetable|plant)(-based)? glycerin(e)?\b|\bblood orange\b/gi
-const NOT_HALAL = /\b(non|not)[- ]?halal\b|غير حلال/i
+// Extra knowledge per rule, kept apart from the display texts above.
+//  subjects  - words a "free from X" statement can use to switch this rule off ("pork-free", "alcohol-free")
+//  okSources - if the item says its source is one of these ("vegetable", "microbial", "fish"), the concern is gone
+//  except    - exact phrases that look risky but are not ("turkey ham", "blood orange", "wine vinegar")
+const EXTRA = {
+  pork: {
+    re: /\b(pork|porcine|swine|bacon|ham|lard|prosciutto|chorizo|pancetta|gammon|pig|hog|porc|schwein\w*|schmalz|cerdo)\b|[خحج][نبتث][زر][يى]ر/i,
+    subjects: ['pork', 'pig', 'swine', 'lard', 'ham', 'bacon', 'porcine', 'pancetta', 'gammon', 'hog', 'porc', 'schwein', 'schweinefleisch', 'schweinefett', 'cerdo', 'خنزير'],
+    except: /\b(turkey|beef|chicken|veal|lamb|mutton|duck)[- ](ham|bacon|sausage|salami|pepperoni|prosciutto)\b/g,
+  },
+  alcohol: {
+    subjects: ['alcohol', 'ethanol', 'wine', 'beer', 'rum', 'liqueur', 'brandy', 'vodka', 'whisky', 'whiskey', 'spirits', 'liquor', 'alcool', 'alkohol', 'كحول', 'خمر', 'نبيذ'],
+    except: /\b(wine|sherry|balsamic) vinegar\b/g,
+  },
+  blood: { subjects: ['blood', 'دم'], except: /\bblood oranges?\b/g },
+  gelatin: {
+    re: /\b(gelatin|gelatine|gélatine|gelatina)\b|\bE ?441\b|جيلاتين|جلاتين/i,
+    subjects: ['gelatin', 'gelatine', 'gélatine', 'gelatina', 'جيلاتين', 'جلاتين'], okSources: ['fish', 'plant'],
+  },
+  rennet: {
+    re: /\b(rennet|rennin|présure|presure|cuajo)\b|أنفحة|منفحة/i,
+    subjects: ['rennet', 'présure', 'cuajo', 'منفحة', 'انفحة'], okSources: ['microbial', 'plant'],
+  },
+  meat: { subjects: ['meat', 'beef', 'chicken', 'lamb', 'mutton', 'turkey', 'veal', 'duck', 'poultry', 'لحم', 'لحوم', 'دجاج'] },
+  animalfat: { subjects: ['fat', 'fats', 'tallow', 'suet', 'شحم'] },
+  enzymes: { subjects: ['enzyme', 'enzymes', 'lipase', 'pepsin', 'انزيم'], okSources: ['microbial', 'plant', 'synthetic'] },
+  mono: { okSources: ['plant', 'microbial', 'synthetic'] },
+  fatty: { okSources: ['plant', 'microbial', 'synthetic'] },
+  glycerin: { okSources: ['plant', 'synthetic'] },
+  inosinate: { okSources: ['plant', 'microbial', 'synthetic'] },
+  cysteine: { okSources: ['synthetic', 'microbial'] },
+  collagen: { subjects: ['collagen', 'كولاجين'], okSources: ['fish', 'plant'] },
+  vanilla: { subjects: ['alcohol', 'ethanol', 'كحول'] },
+  winevinegar: { re: /\b(wine|sherry|balsamic) vinegar\b/i, subjects: ['alcohol', 'wine'] },
+}
+for (const r of RULES) Object.assign(r, EXTRA[r.id])
 
-/** trusted=false means the text may be unreadable or in an unknown language, so "clean" is not a safe answer */
+const matches = (rule, text) => rule.re.test(rule.except ? text.replace(rule.except, ' ') : text)
+
+/**
+ * Judge an ingredient list item by item.
+ * trusted=false means the text may be unreadable or in an unknown language, so "clean" is not a safe answer.
+ * Returns { found, v, cert, items, statements, credible }: `found` and `v` keep their old meaning for the UI.
+ */
 export function analyze(text, { trusted = true } = {}) {
-  const clean = String(text || '').replace(ALC_FREE, ' ').replace(SAFE, ' ')
-    .replace(/\b(wine|sherry|balsamic) vinegar\b/gi, ' WINEVINEGAR ')
-  // a "halal" claim in the text only relaxes the slaughter/source rules (certOk); haram items always count
-  const cert = HALAL_RE.test(clean) && !NOT_HALAL.test(clean)
-  const found = []
-  for (const r of RULES) if (r.re.test(clean) && !(r.certOk && cert)) found.push(r)
+  const parsed = parseIngredients(text)
+  // A halal claim only helps an ingredient that depends on slaughter or source (certOk rules) and never lowers a
+  // haram verdict. Attached to such an item it covers that item; anywhere else it is a claim about the product.
+  const dependsOnCert = (item) => RULES.some((r) => r.certOk && matches(r, item.text))
+  const productHalal = parsed.claims.halal || parsed.items.some((i) => i.claimHalal && !dependsOnCert(i))
+
+  const byRule = new Map()
+  for (const item of parsed.items) {
+    for (const rule of RULES) {
+      if (!matches(rule, item.text)) continue
+      if (rule.subjects && item.freeFrom.some((s) => rule.subjects.includes(s))) continue          // "pork-free", "no meat"
+      if (item.source && rule.okSources?.includes(item.source)) continue                              // "vegetable", "microbial"
+      if (rule.certOk && (item.claimHalal || productHalal)) continue                                  // halal-certified source
+      let status = rule.s
+      if (item.trace) { if (status !== 'haram') continue; status = 'doubtful' }                       // "may contain traces of pork"
+      const hit = byRule.get(rule.id) ?? { ...rule, s: status, evidence: [] }
+      if (status === 'haram') hit.s = 'haram'
+      hit.evidence.push(item.original)
+      byRule.set(rule.id, hit)
+    }
+  }
+  const found = [...byRule.values()]
   const bad = found.some((f) => f.s === 'haram')
   const doubt = found.some((f) => f.s === 'doubtful')
-  const v = bad ? 'bad' : doubt ? 'warn' : clean.trim().length > 3 && trusted ? 'ok' : 'unknown'
-  return { found, v, cert }
+  const readable = String(text ?? '').trim().length > 3 && parsed.credible
+  const v = bad ? 'bad' : doubt ? 'warn' : readable && trusted ? 'ok' : 'unknown'
+  const items = parsed.items.map(({ original, text: t, parent, trace, source, freeFrom, claimHalal }) => ({ original, text: t, parent, trace, source, freeFrom, claimHalal }))
+  return { found, v, cert: productHalal || parsed.items.some((i) => i.claimHalal), items, statements: parsed.statements, credible: parsed.credible }
 }

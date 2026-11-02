@@ -24,35 +24,47 @@ describe('known gaps (engine currently gets these wrong)', () => {
   }
 })
 
-describe('evaluation report', () => {
-  const rows = counted.map((c) => ({ ...c, got: analyze(c.text).v }))
+const FLOORS = { // today's measured values, rounded down; raise them as the engine improves
+  dev: { accuracy: 0.98, precision: 0.95, recall: 0.95, greens: 0 },
+  holdout: { accuracy: 0.9, precision: 0.9, recall: 0.9, greens: 1 },
+}
+
+function evaluate(set) {
+  const rows = cases.filter((c) => c.set === set && !c.debatable && !c.knownGap).map((c) => ({ ...c, got: analyze(c.text).v }))
   const matrix = Object.fromEntries(STATES.map((e) => [e, Object.fromEntries(STATES.map((g) => [g, 0]))]))
   for (const r of rows) matrix[r.expected][r.got]++
   const accuracy = rows.filter((r) => r.got === r.expected).length / rows.length
   const tp = matrix.bad.bad, fn = STATES.filter((s) => s !== 'bad').reduce((a, s) => a + matrix.bad[s], 0)
   const fp = STATES.filter((s) => s !== 'bad').reduce((a, s) => a + matrix[s].bad, 0)
-  const haramRecall = tp / (tp + fn), haramPrecision = tp / (tp + fp)
-  const falseGreen = rows.filter((r) => r.expected !== 'ok' && r.expected !== 'unknown' && r.got === 'ok')
+  return {
+    rows, matrix, accuracy, tp, fn, fp, precision: tp / (tp + fp), recall: tp / (tp + fn),
+    greens: rows.filter((r) => (r.expected === 'warn' || r.expected === 'bad') && r.got === 'ok'),
+  }
+}
 
+// "dev" cases were used while designing the engine, so they only guard against regressions.
+// "holdout" cases were written before the engine was run on them; they are the honest accuracy signal.
+describe.each(['dev', 'holdout'])('evaluation: %s set', (set) => {
+  const e = evaluate(set), f = FLOORS[set]
+  const line = (x) => `${x.padEnd(8)}` + STATES.map((g) => String(e.matrix[x][g]).padStart(8)).join('')
   it('prints the confusion matrix and haram precision / recall', () => {
-    const line = (e) => `${e.padEnd(8)}` + STATES.map((g) => String(matrix[e][g]).padStart(8)).join('')
-    console.info(['', `cases counted: ${rows.length} (debatable excluded: ${cases.length - rows.length})`, `rows = expected, columns = engine`,
+    console.info(['', `[${set}] cases counted: ${e.rows.length} (debatable and known gaps excluded)`, 'rows = expected, columns = engine',
       ''.padEnd(8) + STATES.map((s) => s.padStart(8)).join(''), ...STATES.map(line), '',
-      `accuracy          ${(accuracy * 100).toFixed(1)}%`,
-      `haram precision   ${(haramPrecision * 100).toFixed(1)}%  (${tp} of ${tp + fp} flagged haram really are)`,
-      `haram recall      ${(haramRecall * 100).toFixed(1)}%  (${tp} of ${tp + fn} haram cases found)`,
-      `false greens      ${falseGreen.length}: ${falseGreen.map((r) => r.id).join(', ') || 'none'}`].join('\n'))
-    expect(rows.length).toBeGreaterThan(100)
+      `accuracy          ${(e.accuracy * 100).toFixed(1)}%`,
+      `haram precision   ${(e.precision * 100).toFixed(1)}%  (${e.tp} of ${e.tp + e.fp} flagged haram really are)`,
+      `haram recall      ${(e.recall * 100).toFixed(1)}%  (${e.tp} of ${e.tp + e.fn} haram cases found)`,
+      `false greens      ${e.greens.length}: ${e.greens.map((r) => r.id).join(', ') || 'none'}`].join('\n'))
+    expect(e.rows.length).toBeGreaterThan(40)
   })
-  // floors = today's measured numbers (accuracy 85.7%, haram precision 70.8%, recall 94.4%, 2 false greens).
-  // A change must not make them worse; raise the floors as the engine improves.
-  it('accuracy does not drop below today', () => expect(accuracy).toBeGreaterThanOrEqual(0.85))
-  it('haram precision does not drop below today', () => expect(haramPrecision).toBeGreaterThanOrEqual(0.70))
-  it('haram recall does not drop below today', () => expect(haramRecall).toBeGreaterThanOrEqual(0.94))
-  it('no new false greens (a product with a flagged ingredient called clean)', () => expect(falseGreen.length).toBeLessThanOrEqual(2))
+  it('accuracy does not drop', () => expect(e.accuracy).toBeGreaterThanOrEqual(f.accuracy))
+  it('haram precision does not drop', () => expect(e.precision).toBeGreaterThanOrEqual(f.precision))
+  it('haram recall does not drop', () => expect(e.recall).toBeGreaterThanOrEqual(f.recall))
+  it('no new false greens (a flagged ingredient called clean)', () => expect(e.greens.length).toBeLessThanOrEqual(f.greens))
 })
 
 describe('properties that must always hold', () => {
+  // a new sentence, so the word cannot become part of a "may contain traces of ..." list that the text already ends with
+  const addSentence = (t, w) => `${t.replace(/[.\s]+$/, '')}. ${w}`
   const solid = good.filter((c) => !/[():;]/.test(c.text) && c.text.includes(','))
   const order = (a, b) => a.localeCompare(b)
 
@@ -74,11 +86,11 @@ describe('properties that must always hold', () => {
     }
   })
   it('adding pork never makes a verdict better', () => {
-    for (const c of good.filter((c) => c.text.trim().length > 3)) expect(analyze(`${c.text}, pork`).v, c.id).toBe('bad')
+    for (const c of good.filter((c) => c.text.trim().length > 3)) expect(analyze(addSentence(c.text, 'pork')).v, c.id).toBe('bad')
   })
   it('adding gelatin to a clean product never leaves it clean', () => {
     // texts that already mention a halal claim are excluded: today that claim relaxes every certOk rule in the text
-    for (const c of good.filter((c) => c.expected === 'ok' && !/halal/i.test(c.text))) expect(analyze(`${c.text}, gelatin`).v, c.id).not.toBe('ok')
+    for (const c of good.filter((c) => c.expected === 'ok' && !/halal|حلال/i.test(c.text))) expect(analyze(addSentence(c.text, 'gelatin')).v, c.id).not.toBe('ok')
   })
   it('letter case does not matter', () => {
     for (const c of good) expect(analyze(c.text.toUpperCase()).v, c.id).toBe(analyze(c.text).v)
