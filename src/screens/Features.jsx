@@ -53,7 +53,7 @@ export function Scanner() {
       <div className="feat-body">
         <div style={{ display: 'flex', gap: 7, marginBottom: 12 }}>
           {['barcode', 'photo', 'paste'].map((x) => (
-            <button key={x} className="btn ghost" style={{ flex: 1, minHeight: 42, borderColor: tab === x ? 'var(--accent)' : undefined, color: tab === x ? 'var(--accent)' : undefined }} onClick={() => { setTab(x); setResult(null) }}>
+            <button key={x} className="btn ghost" style={{ flex: 1, minHeight: 42, padding: '10px 6px', borderColor: tab === x ? 'var(--accent)' : undefined, color: tab === x ? 'var(--accent)' : undefined }} onClick={() => { setTab(x); setResult(null) }}>
               {x === 'barcode' ? t.tabBarcode : x === 'photo' ? (lang === 'ar' ? 'صورة' : 'Photo') : t.tabPaste}
             </button>
           ))}

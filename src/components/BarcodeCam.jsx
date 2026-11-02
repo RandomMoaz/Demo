@@ -8,6 +8,7 @@ import { scanFrame } from '../lib/frameScan'
 const MSG = {
   en: {
     open: 'Open camera', close: 'Close camera', starting: 'Starting camera…',
+    idle: 'Scan a product barcode or QR code with the camera, or choose a saved image of one.',
     pickImage: 'Choose a barcode image', readingImage: 'Reading the image…',
     imgFail: 'No barcode could be read from this image. Use a sharper photo where the barcode fills more of the frame, or type the number.',
     hint: 'Point the camera at the barcode or QR code and hold steady.',
@@ -21,6 +22,7 @@ const MSG = {
   },
   ar: {
     open: 'افتح الكاميرا', close: 'اقفل الكاميرا',
+    idle: 'امسح باركود المنتج أو كود QR بالكاميرا، أو اختر صورة محفوظة منهم.',
     pickImage: 'اختر صورة باركود', readingImage: 'جارٍ قراءة الصورة…',
     imgFail: 'ماقدرتش أقرا باركود من الصورة دي. استخدم صورة أوضح والباركود يملأ مساحة أكبر منها، أو اكتب الرقم.', starting: 'جارٍ تشغيل الكاميرا…',
     hint: 'وجّه الكاميرا للباركود أو كود QR وثبّتها.',
@@ -169,6 +171,7 @@ export default function BarcodeCam({ lang = 'en', onCode }) {
         <video ref={videoRef} playsInline muted autoPlay />
         <div className="cam-frame"><i /></div>
       </div>
+      {state === 'idle' && !note && !imgBusy && <p className="cam-note">{m.idle}</p>}
       {state === 'starting' && <p className="cam-note">{m.starting}</p>}
       {state === 'scanning' && <p className="cam-note">{m.hint}</p>}
       {note && <p className="cam-note err">{note}</p>}
