@@ -38,6 +38,7 @@ describe('MediaPipe pose worker pipeline', () => {
     expect(fetch).toHaveBeenCalledWith('http://localhost/models/pose_landmarker_lite.task', { method: 'GET', cache: 'no-store' })
     expect(createFromOptions.mock.calls[0][1].baseOptions.delegate).toBe('GPU')
     expect(createFromOptions.mock.calls[1][1].baseOptions.delegate).toBe('CPU')
+    expect(forVisionTasks).toHaveBeenCalledTimes(2)
     expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({
       type: 'diagnostic', stage: 'delegate', message: 'GPU initialization failed; trying CPU fallback',
       details: { error: 'Error: WebGL context unavailable' },
@@ -74,5 +75,15 @@ describe('MediaPipe pose worker pipeline', () => {
       type: 'error', stage: 'asset-check', message: expect.stringContaining('HTTP 404'),
     })))
     expect(createFromOptions).not.toHaveBeenCalled()
+  })
+
+  it('reports both delegate failures without losing the original GPU exception', async () => {
+    createFromOptions.mockRejectedValueOnce(new Error('GPU delegate unavailable')).mockRejectedValueOnce(new Error('CPU kernel rejected model'))
+    const worker = await loadWorker()
+    worker.onmessage({ data: { type: 'init', wasmPath: 'http://localhost/mediapipe/wasm/', modelPath: 'http://localhost/models/pose_landmarker_lite.task' } })
+    await vi.waitFor(() => expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'error', stage: 'delegate-initialization',
+      message: 'GPU failed: Error: GPU delegate unavailable; CPU failed: Error: CPU kernel rejected model',
+    })))
   })
 })

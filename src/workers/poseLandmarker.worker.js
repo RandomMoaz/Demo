@@ -29,7 +29,12 @@ async function initialize({ wasmPath, modelPath }) {
     requireHttp200(wasmBinary, 'MediaPipe WASM binary'),
   ])
 
-  const files = await FilesetResolver.forVisionTasks(wasmPath, true)
+  let files
+  try {
+    files = await FilesetResolver.forVisionTasks(wasmPath, true)
+  } catch (error) {
+    throw Object.assign(new Error(`MediaPipe WASM initialization failed: ${describeError(error)}`), { stage: 'wasm-initialization' })
+  }
   emit('wasm', 'MediaPipe WASM fileset resolved', { wasmLoaderPath: files.wasmLoaderPath, wasmBinaryPath: files.wasmBinaryPath })
 
   emit('model', 'Loading pose_landmarker_lite.task')
@@ -46,6 +51,7 @@ async function initialize({ wasmPath, modelPath }) {
     outputPoseSegmentationMasks: false,
   }
   emit('delegate', 'Attempting GPU delegate')
+  let gpuFailure = 'GPU initialization was not attempted'
   try {
     landmarker = await PoseLandmarker.createFromOptions(files, {
       ...commonOptions,
@@ -55,19 +61,24 @@ async function initialize({ wasmPath, modelPath }) {
     self.postMessage({ type: 'ready', delegate: 'GPU' })
     return
   } catch (gpuError) {
-    emit('delegate', 'GPU initialization failed; trying CPU fallback', { error: describeError(gpuError) })
+    gpuFailure = describeError(gpuError)
+    emit('delegate', 'GPU initialization failed; trying CPU fallback', { error: gpuFailure })
   }
 
   emit('delegate', 'Attempting CPU fallback')
   try {
-    landmarker = await PoseLandmarker.createFromOptions(files, {
+    // Recreate the WASM fileset after a failed GPU graph initialization so the
+    // CPU fallback gets a clean task runtime in browsers with partial GPU setup.
+    const cpuFiles = await FilesetResolver.forVisionTasks(wasmPath, true)
+    emit('wasm', 'CPU fallback fileset resolved', { wasmLoaderPath: cpuFiles.wasmLoaderPath, wasmBinaryPath: cpuFiles.wasmBinaryPath })
+    landmarker = await PoseLandmarker.createFromOptions(cpuFiles, {
       ...commonOptions,
       baseOptions: { modelAssetBuffer: new Uint8Array(modelAssetBuffer), delegate: 'CPU' },
     })
     emit('delegate', 'CPU fallback initialized')
     self.postMessage({ type: 'ready', delegate: 'CPU' })
   } catch (cpuError) {
-    const message = `GPU failed: ${describeError(gpuError)}; CPU failed: ${describeError(cpuError)}`
+    const message = `GPU failed: ${gpuFailure}; CPU failed: ${describeError(cpuError)}`
     self.postMessage({ type: 'error', stage: 'delegate-initialization', message })
   }
 }
