@@ -6,6 +6,7 @@ import BarcodeCam from '../components/BarcodeCam'
 import IngredientOCR from '../components/IngredientOCR'
 import { OCR_BLOCK, OCR_TRUST } from '../lib/ocrPrep'
 import { createPrayerCameraController } from '../lib/prayerCamera'
+import { createPoseTracker, drawPoseSkeleton, summarizePoseResult } from '../lib/poseTracker'
 
 const Back = ({ onClick }) => (
   <button className="back-ic" onClick={onClick} aria-label="back">
@@ -233,8 +234,12 @@ export function MapScreen() {
 export function Salah() {
   const { t, lang, back } = useApp()
   const [cameraState, setCameraState] = useState('idle')
+  const [poseStatus, setPoseStatus] = useState('idle')
+  const [poseSummary, setPoseSummary] = useState(null)
   const videoRef = useRef(null)
+  const canvasRef = useRef(null)
   const cameraRef = useRef(null)
+  const trackerRef = useRef(null)
   const ar = lang === 'ar'
   const text = {
     idle: ar ? 'تُستخدم الكاميرا لعرضك أثناء التدريب. لا يتم حفظ الفيديو أو رفعه.' : 'The camera shows you during practice. Video is not saved or uploaded.',
@@ -259,6 +264,48 @@ export function Salah() {
     }
   }, [])
 
+  useEffect(() => {
+    if (cameraState !== 'active' || !videoRef.current) {
+      trackerRef.current?.stop()
+      trackerRef.current = null
+      setPoseStatus('idle')
+      setPoseSummary(null)
+      const ctx = canvasRef.current?.getContext?.('2d')
+      if (ctx && canvasRef.current) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+      return
+    }
+    const tracker = createPoseTracker(videoRef.current, {
+      onStatus: setPoseStatus,
+      onResult: (result) => {
+        const summary = summarizePoseResult(result.poses)
+        setPoseSummary(summary)
+        setPoseStatus(summary.status)
+        const canvas = canvasRef.current
+        if (canvas && result.width && result.height) {
+          if (canvas.width !== result.width) canvas.width = result.width
+          if (canvas.height !== result.height) canvas.height = result.height
+          // The canvas element is mirrored by the same CSS transform as the video.
+          drawPoseSkeleton(canvas, summary.landmarks, { mirrored: false })
+        }
+      },
+    })
+    trackerRef.current = tracker
+    return () => {
+      tracker.stop()
+      if (trackerRef.current === tracker) trackerRef.current = null
+    }
+  }, [cameraState])
+
+  const trackingText = {
+    idle: '', loading: ar ? 'جارٍ تحميل تتبّع الجسم على جهازك…' : 'Loading on-device pose tracking…',
+    searching: ar ? 'ضَع جسمك داخل الإطار لبدء التتبّع.' : 'Move into the frame to begin tracking.',
+    tracking: ar ? 'تم رصد الجسم' : 'Body detected',
+    partial: ar ? 'الجسم ظاهر جزئيًا — أظهر جسمك كاملًا.' : 'Body partly visible — show your full body.',
+    'no-pose': ar ? 'لم يتم رصد جسم. حسّن الإضاءة وأظهر جسمك كاملًا.' : 'No body detected. Improve lighting and show your full body.',
+    multiple: ar ? 'يظهر أكثر من شخص. استخدم الكاميرا لشخص واحد فقط.' : 'More than one person detected. Please track one person at a time.',
+    error: ar ? 'تعذّر تحميل تتبّع الجسم. أوقف الكاميرا وحاول مجددًا.' : 'Pose tracking could not start. Stop the camera and try again.',
+  }
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }} dir={t.dir}>
       <div className="feat-top">
@@ -269,9 +316,13 @@ export function Salah() {
       <div className="feat-body">
         <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', background: '#05070a', aspectRatio: '3/4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <video ref={videoRef} playsInline muted autoPlay aria-label={ar ? 'معاينة الكاميرا' : 'Camera preview'} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', visibility: cameraState === 'active' ? 'visible' : 'hidden' }} />
+          <canvas ref={canvasRef} aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', pointerEvents: 'none' }} />
           {cameraState !== 'active' && <div style={{ position: 'relative', textAlign: 'center', padding: 26, color: 'var(--muted)' }}><p style={{ fontSize: 12.5, lineHeight: 1.6, maxWidth: '30ch' }}>{cameraState === 'idle' ? t.poseHint : text[cameraState]}</p></div>}
         </div>
         <p role="status" aria-live="polite" style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)' }}>{text[cameraState] || text.error}</p>
+        {cameraState === 'active' && <p aria-live="polite" style={{ marginTop: 4, fontSize: 12, color: poseStatus === 'tracking' ? 'var(--accent)' : 'var(--muted)' }}>
+          {trackingText[poseStatus] || trackingText.searching}{poseSummary && poseSummary.visible > 0 && poseStatus !== 'multiple' && ` · ${ar ? 'الثقة' : 'Confidence'} ${Math.round(poseSummary.confidence * 100)}% · ${poseSummary.visible}/33`}
+        </p>}
         <button className="btn block" disabled={cameraState === 'starting'} onClick={cameraState === 'active' ? stop : start}>{cameraState === 'active' ? (ar ? 'إيقاف الكاميرا' : 'Stop camera') : cameraState === 'starting' ? text.starting : t.poseStart}</button>
         <p style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.6, marginTop: 14 }}>{t.salahNote}</p>
       </div>
