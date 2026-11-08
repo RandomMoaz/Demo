@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
+    "react-test-renderer": "^18.3.1",
     "vite": "^5.4.0",
     "vitest": "^2.1.9"
   }

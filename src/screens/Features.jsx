@@ -5,6 +5,7 @@ import { Anim } from '../components/Lottie'
 import BarcodeCam from '../components/BarcodeCam'
 import IngredientOCR from '../components/IngredientOCR'
 import { OCR_BLOCK, OCR_TRUST } from '../lib/ocrPrep'
+import { createPrayerCameraController } from '../lib/prayerCamera'
 
 const Back = ({ onClick }) => (
   <button className="back-ic" onClick={onClick} aria-label="back">
@@ -228,55 +229,35 @@ export function MapScreen() {
   )
 }
 
-/* ---------------- Salah (MediaPipe loaded on demand) ---------------- */
+/* ---------------- Salah camera (pose inference is implemented separately) ---------------- */
 export function Salah() {
-  const { t, go, back } = useApp()
-  const [started, setStarted] = useState(false)
-  const [posture, setPosture] = useState('—')
+  const { t, lang, back } = useApp()
+  const [cameraState, setCameraState] = useState('idle')
   const videoRef = useRef(null)
-  const canvasRef = useRef(null)
-
-  async function loadScript(src) {
-    return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s) })
+  const cameraRef = useRef(null)
+  const ar = lang === 'ar'
+  const text = {
+    idle: ar ? 'تُستخدم الكاميرا لعرضك أثناء التدريب. لا يتم حفظ الفيديو أو رفعه.' : 'The camera shows you during practice. Video is not saved or uploaded.',
+    starting: ar ? 'جارٍ طلب إذن الكاميرا…' : 'Requesting camera access…',
+    active: ar ? 'الكاميرا تعمل. أوقفها في أي وقت.' : 'Camera is on. You can stop it at any time.',
+    denied: ar ? 'لم يُسمح بالوصول إلى الكاميرا. يمكنك السماح بها من إعدادات المتصفح.' : 'Camera access was denied. You can allow it in your browser settings.',
+    unavailable: ar ? 'لا توجد كاميرا متاحة على هذا الجهاز.' : 'No camera is available on this device.',
+    busy: ar ? 'الكاميرا مستخدمة حاليًا. أغلق التطبيق الآخر ثم حاول مجددًا.' : 'The camera is in use. Close the other app and try again.',
+    insecure: ar ? 'يتطلب الوصول للكاميرا صفحة آمنة عبر HTTPS.' : 'Camera access requires a secure HTTPS page.',
+    error: ar ? 'تعذر تشغيل الكاميرا. تحقق من إعدادات الجهاز وحاول مجددًا.' : 'Could not start the camera. Check device settings and try again.',
   }
 
-  async function start() {
-    setStarted(true)
-    try {
-      if (!window.Pose) {
-        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js')
-        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js')
-        await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3/drawing_utils.js')
-      }
-      const video = videoRef.current, canvas = canvasRef.current, ctx = canvas.getContext('2d')
-      const pose = new window.Pose({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/${f}` })
-      pose.setOptions({ modelComplexity: 0, smoothLandmarks: true, minDetectionConfidence: .5, minTrackingConfidence: .5 })
-      const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 })
-      const classify = (lm) => {
-        const nose = lm[0], hp = mid(lm[23], lm[24]), an = mid(lm[27], lm[28])
-        const sh = mid(lm[11], lm[12])
-        const torso = Math.atan2(Math.abs(sh.x - hp.x), Math.abs(sh.y - hp.y)) * 180 / Math.PI
-        const headLow = nose.y > hp.y - 0.02, hi = (an.y - hp.y) > 0.32, low = (an.y - hp.y) < 0.18
-        if (headLow && torso > 45) return 'سجود'
-        if (torso > 55 && hi) return 'ركوع'
-        if (torso < 35 && hi) return 'قيام'
-        if (torso < 45 && low) return 'جلوس'
-        return '—'
-      }
-      pose.onResults((r) => {
-        canvas.width = r.image.width; canvas.height = r.image.height
-        ctx.save(); ctx.drawImage(r.image, 0, 0)
-        if (r.poseLandmarks) {
-          window.drawConnectors(ctx, r.poseLandmarks, window.POSE_CONNECTIONS, { color: 'rgba(72,185,162,.9)', lineWidth: 3 })
-          window.drawLandmarks(ctx, r.poseLandmarks, { color: '#fff', radius: 2.5 })
-          setPosture(classify(r.poseLandmarks))
-        }
-        ctx.restore()
-      })
-      const cam = new window.Camera(video, { onFrame: async () => { await pose.send({ image: video }) }, width: 480, height: 360 })
-      cam.start()
-    } catch (e) { /* camera unavailable */ }
-  }
+  function start() { void cameraRef.current?.start() }
+  function stop() { cameraRef.current?.stop() }
+
+  useEffect(() => {
+    const camera = createPrayerCameraController(videoRef.current, { onState: setCameraState })
+    cameraRef.current = camera
+    return () => {
+      camera.dispose()
+      if (cameraRef.current === camera) cameraRef.current = null
+    }
+  }, [])
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }} dir={t.dir}>
@@ -287,18 +268,11 @@ export function Salah() {
       </div>
       <div className="feat-body">
         <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', background: '#05070a', aspectRatio: '3/4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <video ref={videoRef} playsInline muted style={{ display: 'none' }} />
-          <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          {!started && (
-            <div style={{ position: 'relative', textAlign: 'center', padding: 26, color: 'var(--muted)' }}>
-              <button className="btn" onClick={start}>{t.poseStart}</button>
-              <p style={{ fontSize: 12.5, marginTop: 14, lineHeight: 1.6, maxWidth: '30ch' }}>{t.poseHint}</p>
-            </div>
-          )}
+          <video ref={videoRef} playsInline muted autoPlay aria-label={ar ? 'معاينة الكاميرا' : 'Camera preview'} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', visibility: cameraState === 'active' ? 'visible' : 'hidden' }} />
+          {cameraState !== 'active' && <div style={{ position: 'relative', textAlign: 'center', padding: 26, color: 'var(--muted)' }}><p style={{ fontSize: 12.5, lineHeight: 1.6, maxWidth: '30ch' }}>{cameraState === 'idle' ? t.poseHint : text[cameraState]}</p></div>}
         </div>
-        <div style={{ marginTop: 14, textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 18, padding: 16 }}>
-          <div className="ar" style={{ fontSize: 44, color: 'var(--gold)' }}>{posture}</div>
-        </div>
+        <p role="status" aria-live="polite" style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)' }}>{text[cameraState] || text.error}</p>
+        <button className="btn block" disabled={cameraState === 'starting'} onClick={cameraState === 'active' ? stop : start}>{cameraState === 'active' ? (ar ? 'إيقاف الكاميرا' : 'Stop camera') : cameraState === 'starting' ? text.starting : t.poseStart}</button>
         <p style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.6, marginTop: 14 }}>{t.salahNote}</p>
       </div>
     </div>
