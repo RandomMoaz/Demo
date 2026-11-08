@@ -35,6 +35,8 @@ describe('pose tracker worker lifecycle', () => {
     let videoFrame
     const video = {
       readyState: 2,
+      videoWidth: 640,
+      videoHeight: 480,
       requestVideoFrameCallback: vi.fn((callback) => { videoFrame = callback; return 11 }),
       cancelVideoFrameCallback: vi.fn(),
     }
@@ -51,12 +53,50 @@ describe('pose tracker worker lifecycle', () => {
     expect(worker.postMessage).toHaveBeenLastCalledWith({ type: 'frame', id: 1, timestamp: 200, bitmap }, [bitmap])
     worker.onmessage({ data: { type: 'result', id: 1, poses: [points()], width: 640, height: 480 } })
     expect(onResult).toHaveBeenCalledOnce()
-    expect(onStatus).toHaveBeenCalledWith('loading')
-    expect(onStatus).toHaveBeenCalledWith('searching')
+    expect(onStatus).toHaveBeenCalledWith('initializing', '')
+    expect(onStatus).toHaveBeenCalledWith('loading-model', '')
+    expect(onStatus).toHaveBeenCalledWith('waiting-person', '')
+    expect(onResult.mock.calls[0][0].poses[0]).toHaveLength(33)
     tracker.stop()
     expect(video.cancelVideoFrameCallback).toHaveBeenCalledWith(11)
     expect(worker.terminate).toHaveBeenCalledOnce()
     worker.onmessage({ data: { type: 'result', id: 2, poses: [], width: 640, height: 480 } })
     expect(onResult).toHaveBeenCalledOnce()
+  })
+
+  it('uses one monotonic clock for MediaPipe video timestamps', async () => {
+    const worker = { postMessage: vi.fn(), terminate: vi.fn(), onmessage: null, onerror: null }
+    let videoFrame
+    const video = { readyState: 2, videoWidth: 640, videoHeight: 480, requestVideoFrameCallback: (callback) => { videoFrame = callback; return 1 }, cancelVideoFrameCallback: vi.fn() }
+    const bitmap = { width: 640, height: 480, close: vi.fn() }
+    createPoseTracker(video, { workerFactory: () => worker, bitmapFactory: async () => bitmap })
+    worker.onmessage({ data: { type: 'ready', delegate: 'CPU' } })
+    await videoFrame(5000, { mediaTime: 0 })
+    expect(worker.postMessage.mock.calls.at(-1)[0].timestamp).toBe(5000)
+    worker.onmessage({ data: { type: 'result', id: 1, poses: [], width: 640, height: 480 } })
+    await videoFrame(5110, { mediaTime: 0.11 })
+    expect(worker.postMessage.mock.calls.at(-1)[0].timestamp).toBe(5110)
+  })
+
+  it('surfaces the exact worker/model error and terminates the failed worker', () => {
+    const worker = { postMessage: vi.fn(), terminate: vi.fn(), onmessage: null, onerror: null }
+    const onStatus = vi.fn(), onDiagnostic = vi.fn()
+    createPoseTracker({ requestVideoFrameCallback: vi.fn(), cancelVideoFrameCallback: vi.fn() }, { workerFactory: () => worker, onStatus, onDiagnostic })
+    worker.onmessage({ data: { type: 'error', stage: 'asset-check', message: 'Pose Landmarker model request returned HTTP 404' } })
+    expect(onStatus).toHaveBeenLastCalledWith('error', 'asset-check: Error: Pose Landmarker model request returned HTTP 404')
+    expect(onDiagnostic).toHaveBeenCalledWith(expect.objectContaining({ stage: 'asset-check', message: 'Error: Pose Landmarker model request returned HTTP 404', details: { fatal: true } }))
+    expect(worker.terminate).toHaveBeenCalledOnce()
+  })
+
+  it('reports frame transfer failures with their real error text', async () => {
+    const worker = { postMessage: vi.fn(), terminate: vi.fn(), onmessage: null, onerror: null }
+    let videoFrame
+    const video = { readyState: 2, videoWidth: 640, videoHeight: 480, requestVideoFrameCallback: (callback) => { videoFrame = callback; return 1 }, cancelVideoFrameCallback: vi.fn() }
+    const onStatus = vi.fn()
+    createPoseTracker(video, { workerFactory: () => worker, bitmapFactory: async () => { throw new Error('ImageBitmap decode failed') }, onStatus })
+    worker.onmessage({ data: { type: 'ready', delegate: 'CPU' } })
+    await videoFrame(200, { mediaTime: 0.1 })
+    expect(onStatus).toHaveBeenLastCalledWith('error', 'frame-transfer: Error: ImageBitmap decode failed')
+    expect(worker.terminate).toHaveBeenCalledOnce()
   })
 })

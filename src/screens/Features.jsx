@@ -236,10 +236,14 @@ export function Salah() {
   const [cameraState, setCameraState] = useState('idle')
   const [poseStatus, setPoseStatus] = useState('idle')
   const [poseSummary, setPoseSummary] = useState(null)
+  const [poseError, setPoseError] = useState('')
+  const [diagnostics, setDiagnostics] = useState([])
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const cameraRef = useRef(null)
   const trackerRef = useRef(null)
+  const diagnosticsRef = useRef([])
+  const hadTrackedPersonRef = useRef(false)
   const ar = lang === 'ar'
   const text = {
     idle: ar ? 'تُستخدم الكاميرا لعرضك أثناء التدريب. لا يتم حفظ الفيديو أو رفعه.' : 'The camera shows you during practice. Video is not saved or uploaded.',
@@ -270,40 +274,88 @@ export function Salah() {
       trackerRef.current = null
       setPoseStatus('idle')
       setPoseSummary(null)
+      setPoseError('')
+      diagnosticsRef.current = []
+      setDiagnostics([])
+      hadTrackedPersonRef.current = false
       const ctx = canvasRef.current?.getContext?.('2d')
       if (ctx && canvasRef.current) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
       return
     }
     const tracker = createPoseTracker(videoRef.current, {
-      onStatus: setPoseStatus,
+      onStatus: (status, detail) => {
+        setPoseStatus(status)
+        setPoseError(status === 'error' ? detail || 'The pose worker reported an unspecified error' : '')
+      },
+      onDiagnostic: (event) => {
+        if (!import.meta.env.DEV) return
+        diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), event]
+      },
       onResult: (result) => {
         const summary = summarizePoseResult(result.poses)
         setPoseSummary(summary)
-        setPoseStatus(summary.status)
+        if (summary.status === 'tracking') {
+          hadTrackedPersonRef.current = true
+          setPoseStatus('tracking')
+        } else if (summary.status === 'partial') {
+          hadTrackedPersonRef.current = true
+          setPoseStatus('partial')
+        } else if (summary.status === 'multiple') {
+          setPoseStatus('multiple')
+        } else {
+          setPoseStatus(hadTrackedPersonRef.current ? 'tracking-lost' : 'waiting-person')
+        }
         const canvas = canvasRef.current
         if (canvas && result.width && result.height) {
-          if (canvas.width !== result.width) canvas.width = result.width
-          if (canvas.height !== result.height) canvas.height = result.height
-          // The canvas element is mirrored by the same CSS transform as the video.
+          const dpr = Math.max(1, window.devicePixelRatio || 1)
+          const backingWidth = Math.round(result.width * dpr)
+          const backingHeight = Math.round(result.height * dpr)
+          if (canvas.width !== backingWidth) canvas.width = backingWidth
+          if (canvas.height !== backingHeight) canvas.height = backingHeight
+          // Video and canvas share object-fit and mirror transforms. Draw source coordinates
+          // without a second mirror; CSS mirrors both once for the user-facing preview.
           drawPoseSkeleton(canvas, summary.landmarks, { mirrored: false })
+          if (import.meta.env.DEV) {
+            const videoRect = videoRef.current?.getBoundingClientRect?.()
+            const canvasRect = canvas.getBoundingClientRect?.()
+            diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), {
+              stage: 'canvas', message: 'Rendered landmark frame with matching video/canvas transforms',
+              at: new Date().toISOString(), details: {
+                sourceWidth: result.width, sourceHeight: result.height,
+                canvasBackingWidth: canvas.width, canvasBackingHeight: canvas.height, devicePixelRatio: dpr,
+                videoIntrinsicWidth: videoRef.current?.videoWidth, videoIntrinsicHeight: videoRef.current?.videoHeight,
+                videoClientWidth: videoRect?.width, videoClientHeight: videoRect?.height,
+                canvasClientWidth: canvasRect?.width, canvasClientHeight: canvasRect?.height,
+                cssBoxDimensionsMatch: Boolean(videoRect && canvasRect && Math.abs(videoRect.width - canvasRect.width) < 1 && Math.abs(videoRect.height - canvasRect.height) < 1),
+                videoTransform: getComputedStyle(videoRef.current).transform,
+                videoObjectFit: getComputedStyle(videoRef.current).objectFit,
+                canvasTransform: getComputedStyle(canvas).transform,
+                canvasObjectFit: getComputedStyle(canvas).objectFit,
+              },
+            }]
+          }
         }
       },
     })
     trackerRef.current = tracker
+    const diagnosticsTimer = import.meta.env.DEV ? setInterval(() => setDiagnostics([...diagnosticsRef.current]), 500) : null
     return () => {
+      if (diagnosticsTimer) clearInterval(diagnosticsTimer)
       tracker.stop()
       if (trackerRef.current === tracker) trackerRef.current = null
     }
   }, [cameraState])
 
   const trackingText = {
-    idle: '', loading: ar ? 'جارٍ تحميل تتبّع الجسم على جهازك…' : 'Loading on-device pose tracking…',
-    searching: ar ? 'ضَع جسمك داخل الإطار لبدء التتبّع.' : 'Move into the frame to begin tracking.',
-    tracking: ar ? 'تم رصد الجسم' : 'Body detected',
-    partial: ar ? 'الجسم ظاهر جزئيًا — أظهر جسمك كاملًا.' : 'Body partly visible — show your full body.',
-    'no-pose': ar ? 'لم يتم رصد جسم. حسّن الإضاءة وأظهر جسمك كاملًا.' : 'No body detected. Improve lighting and show your full body.',
+    idle: '',
+    initializing: ar ? 'جارٍ تهيئة الكاميرا والتتبّع…' : 'Initializing camera tracking…',
+    'loading-model': ar ? 'جارٍ تحميل نموذج تتبّع الجسم…' : 'Loading Pose Landmarker model…',
+    'waiting-person': ar ? 'بانتظار ظهور شخص داخل الإطار.' : 'Waiting for a person to enter the frame.',
+    tracking: ar ? 'يجري تتبّع الجسم' : 'Tracking body',
+    partial: ar ? 'التتبّع جزئي — أظهر جسمك كاملًا.' : 'Tracking partial body — show your full body.',
+    'tracking-lost': ar ? 'فُقد التتبّع. عد إلى منتصف الإطار.' : 'Tracking lost. Move back into the frame.',
     multiple: ar ? 'يظهر أكثر من شخص. استخدم الكاميرا لشخص واحد فقط.' : 'More than one person detected. Please track one person at a time.',
-    error: ar ? 'تعذّر تحميل تتبّع الجسم. أوقف الكاميرا وحاول مجددًا.' : 'Pose tracking could not start. Stop the camera and try again.',
+    error: ar ? 'حدث خطأ في تتبّع الجسم.' : 'Pose tracking error.',
   }
 
   return (
@@ -320,9 +372,18 @@ export function Salah() {
           {cameraState !== 'active' && <div style={{ position: 'relative', textAlign: 'center', padding: 26, color: 'var(--muted)' }}><p style={{ fontSize: 12.5, lineHeight: 1.6, maxWidth: '30ch' }}>{cameraState === 'idle' ? t.poseHint : text[cameraState]}</p></div>}
         </div>
         <p role="status" aria-live="polite" style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)' }}>{text[cameraState] || text.error}</p>
-        {cameraState === 'active' && <p aria-live="polite" style={{ marginTop: 4, fontSize: 12, color: poseStatus === 'tracking' ? 'var(--accent)' : 'var(--muted)' }}>
-          {trackingText[poseStatus] || trackingText.searching}{poseSummary && poseSummary.visible > 0 && poseStatus !== 'multiple' && ` · ${ar ? 'الثقة' : 'Confidence'} ${Math.round(poseSummary.confidence * 100)}% · ${poseSummary.visible}/33`}
-        </p>}
+        {cameraState === 'active' && <div aria-live="polite" style={{ marginTop: 4, fontSize: 12, color: poseStatus === 'tracking' ? 'var(--accent)' : 'var(--muted)' }}>
+          <p style={{ margin: 0 }}>{trackingText[poseStatus] || trackingText.initializing}{poseSummary && poseSummary.visible > 0 && poseStatus !== 'multiple' && ` · ${ar ? 'الثقة' : 'Confidence'} ${Math.round(poseSummary.confidence * 100)}% · ${poseSummary.visible}/33`}</p>
+          {poseStatus === 'error' && <p style={{ margin: '4px 0 0', color: 'var(--coral)', overflowWrap: 'anywhere' }}>{poseError}</p>}
+        </div>}
+        {import.meta.env.DEV && diagnostics.length > 0 && <details style={{ marginTop: 10, fontSize: 11, color: 'var(--muted)' }}>
+          <summary>Pose diagnostics ({diagnostics.length})</summary>
+          <ol style={{ maxHeight: 180, overflowY: 'auto', paddingLeft: 24 }}>
+            {diagnostics.map((event, index) => <li key={`${event.at}-${event.stage}-${index}`} style={{ margin: '5px 0', overflowWrap: 'anywhere' }}>
+              <strong>{event.stage}:</strong> {event.message} {Object.keys(event.details || {}).length > 0 && <code>{JSON.stringify(event.details)}</code>}
+            </li>)}
+          </ol>
+        </details>}
         <button className="btn block" disabled={cameraState === 'starting'} onClick={cameraState === 'active' ? stop : start}>{cameraState === 'active' ? (ar ? 'إيقاف الكاميرا' : 'Stop camera') : cameraState === 'starting' ? text.starting : t.poseStart}</button>
         <p style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.6, marginTop: 14 }}>{t.salahNote}</p>
       </div>
