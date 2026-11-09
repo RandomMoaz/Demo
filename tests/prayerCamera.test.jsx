@@ -43,8 +43,19 @@ describe('openPrayerCamera', () => {
     expect(getUserMedia).not.toHaveBeenCalled()
   })
 
-  it('reports camera unavailable when getUserMedia is missing', async () => {
-    await expect(openPrayerCamera({}, { mediaDevices: undefined, secure: true })).rejects.toMatchObject({ code: 'unavailable' })
+  it('reports camera unavailable when navigator is undefined', async () => {
+    vi.stubGlobal('navigator', undefined)
+    await expect(openPrayerCamera(makeVideo())).rejects.toMatchObject({ code: 'unavailable' })
+  })
+
+  it('reports camera unavailable when navigator.mediaDevices is missing', async () => {
+    vi.stubGlobal('navigator', {})
+    await expect(openPrayerCamera(makeVideo(), { secure: true })).rejects.toMatchObject({ code: 'unavailable' })
+  })
+
+  it('reports camera unavailable when mediaDevices.getUserMedia is missing', async () => {
+    vi.stubGlobal('navigator', { mediaDevices: {} })
+    await expect(openPrayerCamera(makeVideo(), { secure: true })).rejects.toMatchObject({ code: 'unavailable' })
   })
 
   it.each([

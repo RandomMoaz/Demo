@@ -1,5 +1,9 @@
 /** Open a user-facing camera stream for Prayer Trainer. Frames remain in the browser. */
-export async function openPrayerCamera(video, { mediaDevices = navigator.mediaDevices, secure = window.isSecureContext } = {}) {
+export async function openPrayerCamera(video, options = {}) {
+  const {
+    mediaDevices = typeof navigator !== 'undefined' ? navigator.mediaDevices : undefined,
+    secure = typeof window !== 'undefined' ? window.isSecureContext : true,
+  } = options
   if (!secure) throw Object.assign(new Error('insecure'), { code: 'insecure' })
   if (!mediaDevices?.getUserMedia) throw Object.assign(new Error('unavailable'), { code: 'unavailable' })
 
