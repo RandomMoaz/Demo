@@ -32,7 +32,7 @@ describe('MediaPipe pose worker pipeline', () => {
     const worker = await loadWorker()
     worker.onmessage({ data: { type: 'init', wasmPath: 'http://localhost/mediapipe/wasm/', modelPath: 'http://localhost/models/pose_landmarker_lite.task' } })
 
-    await vi.waitFor(() => expect(worker.postMessage).toHaveBeenCalledWith({ type: 'ready', delegate: 'CPU' }))
+    await vi.waitFor(() => expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'ready', delegate: 'CPU' })))
     expect(fetch).toHaveBeenCalledWith('http://localhost/mediapipe/wasm/vision_wasm_module_internal.js', { method: 'HEAD', cache: 'no-store' })
     expect(fetch).toHaveBeenCalledWith('http://localhost/mediapipe/wasm/vision_wasm_module_internal.wasm', { method: 'HEAD', cache: 'no-store' })
     expect(fetch).toHaveBeenCalledWith('http://localhost/models/pose_landmarker_lite.task', { method: 'GET', cache: 'no-store' })
@@ -40,8 +40,8 @@ describe('MediaPipe pose worker pipeline', () => {
     expect(createFromOptions.mock.calls[1][1].baseOptions.delegate).toBe('CPU')
     expect(forVisionTasks).toHaveBeenCalledTimes(2)
     expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'diagnostic', stage: 'delegate', message: 'GPU initialization failed; trying CPU fallback',
-      details: { error: 'Error: WebGL context unavailable' },
+      type: 'diagnostic', stage: 'gpu-failure', message: 'GPU initialization failed; trying CPU fallback',
+      details: expect.objectContaining({ error: 'Error: WebGL context unavailable' }),
     }))
     expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'diagnostic', message: 'Pose Landmarker model HTTP 200' }))
   })
@@ -52,7 +52,7 @@ describe('MediaPipe pose worker pipeline', () => {
     createFromOptions.mockResolvedValue(landmarker)
     const worker = await loadWorker()
     worker.onmessage({ data: { type: 'init', wasmPath: 'http://localhost/mediapipe/wasm/', modelPath: 'http://localhost/models/pose_landmarker_lite.task' } })
-    await vi.waitFor(() => expect(worker.postMessage).toHaveBeenCalledWith({ type: 'ready', delegate: 'GPU' }))
+    await vi.waitFor(() => expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'ready', delegate: 'GPU' })))
 
     const bitmap = { width: 640, height: 480, close: vi.fn() }
     worker.onmessage({ data: { type: 'frame', id: 7, timestamp: 1234, bitmap } })
@@ -62,6 +62,29 @@ describe('MediaPipe pose worker pipeline', () => {
     }))
     expect(worker.postMessage.mock.calls.find(([message]) => message.type === 'result')[0].poses[0]).toHaveLength(33)
     expect(bitmap.close).toHaveBeenCalledOnce()
+  })
+
+  it('skips GPU initialization for a recovered CPU-only worker', async () => {
+    createFromOptions.mockResolvedValue({ detectForVideo: vi.fn(), close: vi.fn() })
+    const worker = await loadWorker()
+    worker.onmessage({ data: { type: 'init', delegate: 'CPU', wasmPath: 'http://localhost/mediapipe/wasm/', modelPath: 'http://localhost/models/pose_landmarker_lite.task' } })
+    await vi.waitFor(() => expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'ready', delegate: 'CPU' })))
+    expect(createFromOptions).toHaveBeenCalledOnce()
+    expect(createFromOptions.mock.calls[0][1].baseOptions.delegate).toBe('CPU')
+  })
+
+  it('reports inference failure and always releases the transferred bitmap', async () => {
+    const landmarker = { detectForVideo: vi.fn(() => { throw new Error('WASM inference failed') }), close: vi.fn() }
+    createFromOptions.mockResolvedValue(landmarker)
+    const worker = await loadWorker()
+    worker.onmessage({ data: { type: 'init', wasmPath: 'http://localhost/mediapipe/wasm/', modelPath: 'http://localhost/models/pose_landmarker_lite.task' } })
+    await vi.waitFor(() => expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'ready' })))
+    const bitmap = { width: 640, height: 480, close: vi.fn() }
+    worker.onmessage({ data: { type: 'frame', id: 8, timestamp: 1450, bitmap } })
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'frame-error', id: 8, message: 'Error: WASM inference failed' })
+    expect(bitmap.close).toHaveBeenCalledOnce()
+    expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'diagnostic', stage: 'frame-received', details: expect.objectContaining({ id: 8 }) }))
+    expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'diagnostic', stage: 'inference-start', details: expect.objectContaining({ id: 8 }) }))
   })
 
   it('reports a missing local model with its actual HTTP status', async () => {

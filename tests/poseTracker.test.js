@@ -54,8 +54,8 @@ describe('pose tracker worker lifecycle', () => {
     worker.onmessage({ data: { type: 'result', id: 1, poses: [points()], width: 640, height: 480 } })
     expect(onResult).toHaveBeenCalledOnce()
     expect(onStatus).toHaveBeenCalledWith('initializing', '')
-    expect(onStatus).toHaveBeenCalledWith('loading-model', '')
-    expect(onStatus).toHaveBeenCalledWith('waiting-person', '')
+    expect(onStatus).toHaveBeenCalledWith('loading-model', 'Loading model')
+    expect(onStatus).toHaveBeenCalledWith('waiting-person', 'Ready (undefined)')
     expect(onResult.mock.calls[0][0].poses[0]).toHaveLength(33)
     tracker.stop()
     expect(video.cancelVideoFrameCallback).toHaveBeenCalledWith(11)
@@ -79,13 +79,16 @@ describe('pose tracker worker lifecycle', () => {
   })
 
   it('surfaces the exact worker/model error and terminates the failed worker', () => {
-    const worker = { postMessage: vi.fn(), terminate: vi.fn(), onmessage: null, onerror: null }
+    const workers = []
+    const makeWorker = () => { const worker = { postMessage: vi.fn(), terminate: vi.fn(), onmessage: null, onerror: null }; workers.push(worker); return worker }
     const onStatus = vi.fn(), onDiagnostic = vi.fn()
-    createPoseTracker({ requestVideoFrameCallback: vi.fn(), cancelVideoFrameCallback: vi.fn() }, { workerFactory: () => worker, onStatus, onDiagnostic })
-    worker.onmessage({ data: { type: 'error', stage: 'asset-check', message: 'Pose Landmarker model request returned HTTP 404' } })
+    createPoseTracker({ requestVideoFrameCallback: vi.fn(), cancelVideoFrameCallback: vi.fn() }, { workerFactory: makeWorker, onStatus, onDiagnostic })
+    workers[0].onmessage({ data: { type: 'error', stage: 'asset-check', message: 'Pose Landmarker model request returned HTTP 404' } })
+    workers[1].onmessage({ data: { type: 'error', stage: 'asset-check', message: 'Pose Landmarker model request returned HTTP 404' } })
     expect(onStatus).toHaveBeenLastCalledWith('error', 'asset-check: Error: Pose Landmarker model request returned HTTP 404')
-    expect(onDiagnostic).toHaveBeenCalledWith(expect.objectContaining({ stage: 'asset-check', message: 'Error: Pose Landmarker model request returned HTTP 404', details: { fatal: true } }))
-    expect(worker.terminate).toHaveBeenCalledOnce()
+    expect(onDiagnostic).toHaveBeenCalledWith(expect.objectContaining({ stage: 'asset-check', message: 'Error: Pose Landmarker model request returned HTTP 404', details: expect.objectContaining({ fatal: true }) }))
+    expect(workers[0].terminate).toHaveBeenCalledOnce()
+    expect(workers[1].terminate).toHaveBeenCalledOnce()
   })
 
   it('reports frame transfer failures with their real error text', async () => {
@@ -98,5 +101,59 @@ describe('pose tracker worker lifecycle', () => {
     await videoFrame(200, { mediaTime: 0.1 })
     expect(onStatus).toHaveBeenLastCalledWith('error', 'frame-transfer: Error: ImageBitmap decode failed')
     expect(worker.terminate).toHaveBeenCalledOnce()
+  })
+
+  it('recovers from a frame timeout using one fresh CPU worker without duplicating frame processing', async () => {
+    vi.useFakeTimers()
+    const workers = []
+    const makeWorker = () => { const worker = { postMessage: vi.fn(), terminate: vi.fn(), onmessage: null, onerror: null }; workers.push(worker); return worker }
+    let videoFrame
+    const video = { readyState: 2, videoWidth: 640, videoHeight: 480, requestVideoFrameCallback: (callback) => { videoFrame = callback; return 1 }, cancelVideoFrameCallback: vi.fn() }
+    const bitmaps = [0, 1].map(() => ({ width: 640, height: 480, close: vi.fn() }))
+    const onDiagnostic = vi.fn(), onResult = vi.fn()
+    const tracker = createPoseTracker(video, { workerFactory: makeWorker, bitmapFactory: vi.fn().mockImplementation(() => Promise.resolve(bitmaps.shift())), onDiagnostic, onResult, initTimeoutMs: 1000, frameTimeoutMs: 50 })
+    workers[0].onmessage({ data: { type: 'ready', delegate: 'GPU' } })
+    await videoFrame(200, { mediaTime: 0.2 })
+    expect(workers[0].postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'frame', id: 1 }), expect.any(Array))
+    workers[0].onmessage({ data: { type: 'diagnostic', stage: 'frame-received', message: 'received' } })
+    workers[0].onmessage({ data: { type: 'diagnostic', stage: 'inference-start', message: 'detect started' } })
+    await vi.advanceTimersByTimeAsync(50)
+    expect(workers[0].terminate).toHaveBeenCalledOnce()
+    expect(workers).toHaveLength(2)
+    expect(workers[1].postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'init', delegate: 'CPU' }))
+    workers[1].onmessage({ data: { type: 'ready', delegate: 'CPU' } })
+    await videoFrame(400, { mediaTime: 0.4 })
+    const points = Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.5, visibility: 1 }))
+    workers[1].onmessage({ data: { type: 'result', id: 2, poses: [points], width: 640, height: 480, durationMs: 14 } })
+    expect(onResult).toHaveBeenCalledOnce()
+    expect(onDiagnostic).toHaveBeenCalledWith(expect.objectContaining({ stage: 'detectForVideo-timeout', details: expect.objectContaining({ recovery: 'restarting worker with CPU delegate' }) }))
+    expect(workers[1].postMessage.mock.calls.filter(([message]) => message.type === 'frame')).toHaveLength(1)
+    tracker.stop()
+    vi.useRealTimers()
+  })
+
+  it('times out model initialization and retries exactly once with CPU', async () => {
+    vi.useFakeTimers()
+    const workers = []
+    const tracker = createPoseTracker({}, { workerFactory: () => { const worker = { postMessage: vi.fn(), terminate: vi.fn(), onmessage: null, onerror: null }; workers.push(worker); return worker }, initTimeoutMs: 25 })
+    await vi.advanceTimersByTimeAsync(25)
+    expect(workers).toHaveLength(2)
+    expect(workers[1].postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'init', delegate: 'CPU' }))
+    await vi.advanceTimersByTimeAsync(25)
+    expect(workers[1].terminate).toHaveBeenCalledOnce()
+    tracker.stop()
+    vi.useRealTimers()
+  })
+
+  it('recovers once from worker startup errors and then reports CPU failure clearly', () => {
+    const workers = []
+    const onStatus = vi.fn()
+    const tracker = createPoseTracker({}, { workerFactory: () => { const worker = { postMessage: vi.fn(), terminate: vi.fn(), onmessage: null, onerror: null }; workers.push(worker); return worker }, onStatus })
+    workers[0].onerror({ message: 'module parse failed' })
+    expect(workers[0].terminate).toHaveBeenCalledOnce()
+    workers[1].onerror({ message: 'worker unavailable' })
+    expect(onStatus).toHaveBeenLastCalledWith('error', 'worker-runtime: Error: worker unavailable')
+    expect(workers[1].terminate).toHaveBeenCalledOnce()
+    tracker.stop()
   })
 })

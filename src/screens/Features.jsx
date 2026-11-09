@@ -288,7 +288,6 @@ export function Salah() {
         setPoseError(status === 'error' ? detail || 'The pose worker reported an unspecified error' : '')
       },
       onDiagnostic: (event) => {
-        if (!import.meta.env.DEV) return
         diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), event]
       },
       onResult: (result) => {
@@ -315,30 +314,24 @@ export function Salah() {
           // Video and canvas share object-fit and mirror transforms. Draw source coordinates
           // without a second mirror; CSS mirrors both once for the user-facing preview.
           drawPoseSkeleton(canvas, summary.landmarks, { mirrored: false })
-          if (import.meta.env.DEV) {
-            const videoRect = videoRef.current?.getBoundingClientRect?.()
-            const canvasRect = canvas.getBoundingClientRect?.()
-            diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), {
-              stage: 'canvas', message: 'Rendered landmark frame with matching video/canvas transforms',
-              at: new Date().toISOString(), details: {
-                sourceWidth: result.width, sourceHeight: result.height,
-                canvasBackingWidth: canvas.width, canvasBackingHeight: canvas.height, devicePixelRatio: dpr,
-                videoIntrinsicWidth: videoRef.current?.videoWidth, videoIntrinsicHeight: videoRef.current?.videoHeight,
-                videoClientWidth: videoRect?.width, videoClientHeight: videoRect?.height,
-                canvasClientWidth: canvasRect?.width, canvasClientHeight: canvasRect?.height,
-                cssBoxDimensionsMatch: Boolean(videoRect && canvasRect && Math.abs(videoRect.width - canvasRect.width) < 1 && Math.abs(videoRect.height - canvasRect.height) < 1),
-                videoTransform: getComputedStyle(videoRef.current).transform,
-                videoObjectFit: getComputedStyle(videoRef.current).objectFit,
-                canvasTransform: getComputedStyle(canvas).transform,
-                canvasObjectFit: getComputedStyle(canvas).objectFit,
-              },
-            }]
-          }
+          const videoRect = videoRef.current?.getBoundingClientRect?.()
+          const canvasRect = canvas.getBoundingClientRect?.()
+          diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), {
+            stage: 'canvas-render', message: 'Rendered returned landmarks on the camera canvas',
+            at: new Date().toISOString(), details: {
+              sourceWidth: result.width, sourceHeight: result.height,
+              canvasBackingWidth: canvas.width, canvasBackingHeight: canvas.height, devicePixelRatio: dpr,
+              videoIntrinsicWidth: videoRef.current?.videoWidth, videoIntrinsicHeight: videoRef.current?.videoHeight,
+              videoClientWidth: videoRect?.width, videoClientHeight: videoRect?.height,
+              canvasClientWidth: canvasRect?.width, canvasClientHeight: canvasRect?.height,
+              cssBoxDimensionsMatch: Boolean(videoRect && canvasRect && Math.abs(videoRect.width - canvasRect.width) < 1 && Math.abs(videoRect.height - canvasRect.height) < 1),
+            },
+          }]
         }
       },
     })
     trackerRef.current = tracker
-    const diagnosticsTimer = import.meta.env.DEV ? setInterval(() => setDiagnostics([...diagnosticsRef.current]), 500) : null
+    const diagnosticsTimer = setInterval(() => setDiagnostics([...diagnosticsRef.current]), 500)
     return () => {
       if (diagnosticsTimer) clearInterval(diagnosticsTimer)
       tracker.stop()
@@ -376,11 +369,23 @@ export function Salah() {
           <p style={{ margin: 0 }}>{trackingText[poseStatus] || trackingText.initializing}{poseSummary && poseSummary.visible > 0 && poseStatus !== 'multiple' && ` · ${ar ? 'الثقة' : 'Confidence'} ${Math.round(poseSummary.confidence * 100)}% · ${poseSummary.visible}/33`}</p>
           {poseStatus === 'error' && <p style={{ margin: '4px 0 0', color: 'var(--coral)', overflowWrap: 'anywhere' }}>{poseError}</p>}
         </div>}
-        {import.meta.env.DEV && diagnostics.length > 0 && <details style={{ marginTop: 10, fontSize: 11, color: 'var(--muted)' }}>
+        {diagnostics.length > 0 && <details style={{ marginTop: 10, fontSize: 11, color: 'var(--muted)' }}>
           <summary>Pose diagnostics ({diagnostics.length})</summary>
+          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 10px', overflowWrap: 'anywhere' }}>
+            <dt>Worker</dt><dd>{diagnostics.some((event) => event.stage === 'worker-ready') ? 'Ready' : diagnostics.some((event) => event.stage === 'worker-start') ? 'Starting / initializing' : 'Not started'}</dd>
+            <dt>WASM</dt><dd>{diagnostics.some((event) => ['wasm-ready', 'cpu-wasm-ready'].includes(event.stage)) ? 'Loaded' : diagnostics.some((event) => event.stage === 'wasm-loading') ? 'Loading' : 'Not confirmed'}</dd>
+            <dt>Model</dt><dd>{diagnostics.some((event) => event.stage === 'worker-ready') ? 'Ready' : diagnostics.some((event) => event.stage === 'model-ready') ? 'Loaded; delegate initialization pending' : 'Not confirmed'}</dd>
+            <dt>Delegate</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'worker-ready')?.details?.delegate || 'Pending'}</dd>
+            <dt>Last sent frame</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'frame-transfer')?.details?.id ?? 'None'}</dd>
+            <dt>Last worker-received frame</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'frame-received')?.details?.id ?? 'None'}</dd>
+            <dt>Last completed frame</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'landmarks-received')?.details?.id ?? 'None'}</dd>
+            <dt>Inference duration</dt><dd>{[...diagnostics].reverse().find((event) => ['inference-complete', 'landmarks-received'].includes(event.stage))?.details?.durationMs != null ? `${[...diagnostics].reverse().find((event) => ['inference-complete', 'landmarks-received'].includes(event.stage)).details.durationMs} ms` : 'None'}</dd>
+            <dt>Landmark count</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'landmarks-received')?.details?.landmarkCounts?.join(', ') ?? 'None'}</dd>
+            <dt>Last error</dt><dd>{[...diagnostics].reverse().find((event) => event.details?.fatal || /error|failure|timeout/i.test(event.stage))?.stage || 'None'}</dd>
+          </dl>
           <ol style={{ maxHeight: 180, overflowY: 'auto', paddingLeft: 24 }}>
             {diagnostics.map((event, index) => <li key={`${event.at}-${event.stage}-${index}`} style={{ margin: '5px 0', overflowWrap: 'anywhere' }}>
-              <strong>{event.stage}:</strong> {event.message} {Object.keys(event.details || {}).length > 0 && <code>{JSON.stringify(event.details)}</code>}
+              <strong>{event.stage}</strong> <time>{event.at}</time> — {event.message} {Object.keys(event.details || {}).length > 0 && <code>{JSON.stringify(event.details)}</code>}
             </li>)}
           </ol>
         </details>}

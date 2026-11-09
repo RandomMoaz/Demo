@@ -49,12 +49,14 @@ function errorText(error) {
 }
 
 /** Sends local camera frames to a MediaPipe worker. No frame leaves this device. */
-export function createPoseTracker(video, { onStatus = () => {}, onResult = () => {}, onDiagnostic = () => {}, workerFactory, bitmapFactory } = {}) {
+export function createPoseTracker(video, { onStatus = () => {}, onResult = () => {}, onDiagnostic = () => {}, workerFactory, bitmapFactory, initTimeoutMs = 30000, frameTimeoutMs = 10000 } = {}) {
   let worker
   let stopped = false
   let failed = false
   let ready = false
   let inFlight = false
+  let recoveryUsed = false
+  let workerEpoch = 0
   let frameHandle
   let fallbackRaf
   let lastSentAt = 0
@@ -62,6 +64,9 @@ export function createPoseTracker(video, { onStatus = () => {}, onResult = () =>
   let frameId = 0
   let frameCount = 0
   let responseTimer
+  let initTimer
+  let workerStartedAt = 0
+  let inferenceStartedAt = 0
   const useVideoFrameCallback = typeof video?.requestVideoFrameCallback === 'function'
   const base = new URL(import.meta.env.BASE_URL || '/', globalThis.document?.baseURI || 'http://localhost/')
   const makeWorker = workerFactory || (() => new Worker(new URL('../workers/poseLandmarker.worker.js', import.meta.url), { type: 'module' }))
@@ -86,6 +91,7 @@ export function createPoseTracker(video, { onStatus = () => {}, onResult = () =>
     ready = false
     inFlight = false
     clearTimeout(responseTimer)
+    clearTimeout(initTimer)
     cancelScheduledFrame()
     const message = errorText(error)
     diagnostic(stage, message, { fatal: true })
@@ -126,65 +132,135 @@ export function createPoseTracker(video, { onStatus = () => {}, onResult = () =>
         id, timestampMs: timestamp, bitmapWidth: bitmap.width, bitmapHeight: bitmap.height,
         readyState: video.readyState, videoWidth: video.videoWidth, videoHeight: video.videoHeight,
       })
+      inferenceStartedAt = performance.now()
+      responseTimer = setTimeout(() => {
+        const elapsedMs = Math.round(performance.now() - inferenceStartedAt)
+        const stage = lastWorkerStage === 'inference-start' ? 'detectForVideo-timeout' : 'worker-frame-timeout'
+        const error = new Error(`Frame ${id} timed out after ${elapsedMs}ms; last worker stage: ${lastWorkerStage || 'no worker acknowledgement'}`)
+        if (!recoveryUsed) {
+          recoveryUsed = true
+          diagnostic(stage, error.message, { id, elapsedMs, recovery: 'restarting worker with CPU delegate' })
+          restartWorker('CPU', stage)
+        } else {
+          fail(stage, error)
+        }
+      }, frameTimeoutMs)
       worker.postMessage({ type: 'frame', id, timestamp, bitmap }, [bitmap])
-      responseTimer = setTimeout(() => fail('inference-timeout', new Error(`Worker did not return frame ${id} within 10 seconds`)), 10000)
+      diagnostic('frame-transfer', 'Frame posted to worker; waiting for worker receipt and inference result', { id, timeoutMs: frameTimeoutMs })
     } catch (error) {
       bitmap?.close?.()
       fail('frame-transfer', error)
     }
   }
 
+  let lastWorkerStage = ''
   publish('initializing')
   diagnostic('video', 'Pose tracker attached to camera video element', {
     readyState: video?.readyState, videoWidth: video?.videoWidth, videoHeight: video?.videoHeight,
     requestVideoFrameCallback: useVideoFrameCallback, devicePixelRatio: globalThis.devicePixelRatio || 1,
   })
-  try {
-    worker = makeWorker()
-    diagnostic('worker', 'Module worker created')
-    worker.onmessage = ({ data }) => {
-      if (stopped) return
-      if (data.type === 'diagnostic') {
-        diagnostic(data.stage, data.message, data.details)
-        return
+  const restartWorker = (delegate, reason = 'initialization') => {
+    if (stopped || failed) return
+    clearTimeout(responseTimer)
+    clearTimeout(initTimer)
+    cancelScheduledFrame()
+    ready = false
+    inFlight = false
+    const oldWorker = worker
+    worker = null
+    oldWorker?.terminate()
+    const epoch = ++workerEpoch
+    lastWorkerStage = ''
+    try {
+      worker = makeWorker()
+      const activeWorker = worker
+      workerStartedAt = performance.now()
+      diagnostic('worker-start', 'Worker instance created', { epoch, delegate, reason, atMs: Math.round(workerStartedAt) })
+      initTimer = setTimeout(() => {
+        if (stopped || failed || epoch !== workerEpoch || ready) return
+        const message = `Worker did not initialize within ${initTimeoutMs}ms (delegate: ${delegate})`
+        if (delegate !== 'CPU' && !recoveryUsed) {
+          recoveryUsed = true
+          diagnostic('worker-init-timeout', message, { epoch, recovery: 'restarting worker with CPU delegate' })
+          restartWorker('CPU', 'worker-init-timeout')
+        } else fail('worker-init-timeout', new Error(message))
+      }, initTimeoutMs)
+      activeWorker.onmessage = ({ data }) => {
+        if (stopped || epoch !== workerEpoch) return
+        if (data.type === 'diagnostic') {
+          if (data.stage) lastWorkerStage = data.stage
+          diagnostic(data.stage, data.message, { ...data.details, workerEpoch: epoch, workerAt: data.at })
+          return
+        }
+        if (data.type === 'ready') {
+          clearTimeout(initTimer)
+          ready = true
+          lastWorkerStage = 'ready'
+          diagnostic('worker-ready', 'Pose model ready; inference delegate selected', { delegate: data.delegate, epoch, initializationDurationMs: Math.round(performance.now() - workerStartedAt) })
+          publish('waiting-person', `Ready (${data.delegate})`)
+          schedule()
+          return
+        }
+        if (data.type === 'error') {
+          const stage = data.stage || 'model-initialization'
+          if (delegate !== 'CPU' && !recoveryUsed) {
+            recoveryUsed = true
+            diagnostic(stage, data.message || 'Worker initialization failed', { epoch, recovery: 'restarting worker with CPU delegate' })
+            restartWorker('CPU', stage)
+          } else fail(stage, new Error(data.message || 'Worker reported an unspecified initialization error'))
+          return
+        }
+        if (data.type === 'frame-error') {
+          clearTimeout(responseTimer)
+          inFlight = false
+          lastWorkerStage = 'inference-error'
+          diagnostic('inference-error', data.message || 'detectForVideo failed', { id: data.id, epoch, durationMs: Math.round(performance.now() - inferenceStartedAt) })
+          if (!recoveryUsed) {
+            recoveryUsed = true
+            restartWorker('CPU', 'inference-error')
+            return
+          }
+          fail('inference', new Error(data.message || 'detectForVideo failed'))
+          return
+        }
+        if (data.type === 'result') {
+          clearTimeout(responseTimer)
+          inFlight = false
+          lastWorkerStage = 'result'
+          const counts = (data.poses || []).map((pose) => pose.filter((point) => (point.visibility ?? point.presence ?? 0) >= 0.4).length)
+          diagnostic('landmarks-received', 'Landmark result received on main thread', {
+            id: data.id, poseCount: data.poses?.length || 0, landmarkCounts: (data.poses || []).map((pose) => pose.length),
+            visibleLandmarkCounts: counts, frameWidth: data.width, frameHeight: data.height,
+            durationMs: data.durationMs ?? Math.round(performance.now() - inferenceStartedAt), epoch,
+          })
+          onResult(data)
+        }
       }
-      if (data.type === 'ready') {
-        ready = true
-        diagnostic('worker', 'Pose model ready; inference delegate selected', { delegate: data.delegate })
-        publish('waiting-person')
-        schedule()
-        return
+      activeWorker.onerror = (event) => {
+        if (stopped || epoch !== workerEpoch) return
+        const error = new Error(event.message || `Worker error at ${event.filename || 'unknown file'}:${event.lineno || 0}`)
+        if (delegate !== 'CPU' && !recoveryUsed) { recoveryUsed = true; restartWorker('CPU', 'worker-runtime'); return }
+        fail('worker-runtime', error)
       }
-      if (data.type === 'error') {
-        fail(data.stage || 'model-initialization', new Error(data.message || 'Worker reported an unspecified initialization error'))
-        return
+      activeWorker.onmessageerror = () => {
+        if (stopped || epoch !== workerEpoch) return
+        if (delegate !== 'CPU' && !recoveryUsed) { recoveryUsed = true; restartWorker('CPU', 'worker-message'); return }
+        fail('worker-message', new Error('Browser could not deserialize a worker message'))
       }
-      if (data.type === 'frame-error') {
-        clearTimeout(responseTimer)
-        inFlight = false
-        diagnostic('inference', data.message || 'detectForVideo failed', { id: data.id })
-        fail('inference', new Error(data.message || 'detectForVideo failed'))
-        return
-      }
-      if (data.type === 'result') {
-        clearTimeout(responseTimer)
-        inFlight = false
-        const counts = (data.poses || []).map((pose) => pose.filter((point) => (point.visibility ?? point.presence ?? 0) >= 0.4).length)
-        diagnostic('landmarks-received', 'Landmark result received on main thread', {
-          id: data.id, poseCount: data.poses?.length || 0, landmarkCounts: (data.poses || []).map((pose) => pose.length),
-          visibleLandmarkCounts: counts, frameWidth: data.width, frameHeight: data.height,
-        })
-        onResult(data)
-      }
+      publish('loading-model', delegate === 'CPU' ? 'Loading CPU fallback' : 'Loading model')
+      diagnostic('worker-init', 'Sending MediaPipe initialization request', {
+        wasmPath: new URL('mediapipe/wasm/', base).href,
+        modelPath: new URL('models/pose_landmarker_lite.task', base).href, delegate,
+      })
+      activeWorker.postMessage({ type: 'init', wasmPath: new URL('mediapipe/wasm/', base).href, modelPath: new URL('models/pose_landmarker_lite.task', base).href, delegate })
+    } catch (error) {
+      if (delegate !== 'CPU' && !recoveryUsed) { recoveryUsed = true; diagnostic('worker-creation', errorText(error), { recovery: 'restarting worker with CPU delegate' }); restartWorker('CPU', 'worker-creation') }
+      else fail('worker-creation', error)
     }
-    worker.onerror = (event) => fail('worker-runtime', new Error(event.message || `Worker error at ${event.filename || 'unknown file'}:${event.lineno || 0}`))
-    worker.onmessageerror = () => fail('worker-message', new Error('Browser could not deserialize a worker message'))
-    publish('loading-model')
-    diagnostic('worker', 'Sending MediaPipe initialization request', {
-      wasmPath: new URL('mediapipe/wasm/', base).href,
-      modelPath: new URL('models/pose_landmarker_lite.task', base).href,
-    })
-    worker.postMessage({ type: 'init', wasmPath: new URL('mediapipe/wasm/', base).href, modelPath: new URL('models/pose_landmarker_lite.task', base).href })
+  }
+
+  try {
+    restartWorker('AUTO', 'initialization')
   } catch (error) {
     fail('worker-creation', error)
   }
@@ -196,6 +272,7 @@ export function createPoseTracker(video, { onStatus = () => {}, onResult = () =>
       stopped = true
       ready = false
       clearTimeout(responseTimer)
+      clearTimeout(initTimer)
       cancelScheduledFrame()
       worker?.terminate()
     },
