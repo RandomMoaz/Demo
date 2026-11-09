@@ -110,7 +110,7 @@ function detectFrame({ bitmap, id, timestamp }) {
     emit('inference-complete', 'detectForVideo completed', {
       id, durationMs, poseCount: poses.length, landmarkCounts: poses.map((pose) => pose.length), visibleCounts,
     })
-    self.postMessage({ type: 'result', id, poses, width: bitmap.width, height: bitmap.height, durationMs })
+    self.postMessage({ type: 'result', id, timestamp, poses, width: bitmap.width, height: bitmap.height, durationMs })
   } catch (error) {
     const message = describeError(error)
     emit('inference-error', message, { id })

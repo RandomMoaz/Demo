@@ -7,6 +7,7 @@ import IngredientOCR from '../components/IngredientOCR'
 import { OCR_BLOCK, OCR_TRUST } from '../lib/ocrPrep'
 import { createPrayerCameraController } from '../lib/prayerCamera'
 import { createPoseTracker, drawPoseSkeleton, summarizePoseResult } from '../lib/poseTracker'
+import { createPoseLandmarkProcessor, drawJointAngleLabels } from '../lib/poseLandmarks'
 
 const Back = ({ onClick }) => (
   <button className="back-ic" onClick={onClick} aria-label="back">
@@ -243,6 +244,10 @@ export function Salah() {
   const cameraRef = useRef(null)
   const trackerRef = useRef(null)
   const diagnosticsRef = useRef([])
+  const landmarkProcessorRef = useRef(null)
+  const processedPoseRef = useRef(null)
+  const showAngleOverlayRef = useRef(false)
+  const [showAngleOverlay, setShowAngleOverlay] = useState(false)
   const hadTrackedPersonRef = useRef(false)
   const ar = lang === 'ar'
   const text = {
@@ -272,6 +277,9 @@ export function Salah() {
     if (cameraState !== 'active' || !videoRef.current) {
       trackerRef.current?.stop()
       trackerRef.current = null
+      landmarkProcessorRef.current?.reset()
+      landmarkProcessorRef.current = null
+      processedPoseRef.current = null
       setPoseStatus('idle')
       setPoseSummary(null)
       setPoseError('')
@@ -282,6 +290,7 @@ export function Salah() {
       if (ctx && canvasRef.current) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
       return
     }
+    landmarkProcessorRef.current = createPoseLandmarkProcessor({ minConfidence: 0.5, smoothingFactor: 0.55 })
     const tracker = createPoseTracker(videoRef.current, {
       onStatus: (status, detail) => {
         setPoseStatus(status)
@@ -291,7 +300,15 @@ export function Salah() {
         diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), event]
       },
       onResult: (result) => {
+        const processingStartedAt = performance.now()
         const summary = summarizePoseResult(result.poses)
+        const processed = landmarkProcessorRef.current?.process(summary.landmarks, {
+          timestamp: result.timestamp ?? performance.now(),
+          width: result.width || videoRef.current?.videoWidth || 1,
+          height: result.height || videoRef.current?.videoHeight || 1,
+          trackingStatus: summary.status,
+        })
+        processedPoseRef.current = processed || null
         setPoseSummary(summary)
         if (summary.status === 'tracking') {
           hadTrackedPersonRef.current = true
@@ -314,6 +331,7 @@ export function Salah() {
           // Video and canvas share object-fit and mirror transforms. Draw source coordinates
           // without a second mirror; CSS mirrors both once for the user-facing preview.
           drawPoseSkeleton(canvas, summary.landmarks, { mirrored: false })
+          if (import.meta.env.DEV && showAngleOverlayRef.current && processed) drawJointAngleLabels(canvas, processed)
           const videoRect = videoRef.current?.getBoundingClientRect?.()
           const canvasRect = canvas.getBoundingClientRect?.()
           diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), {
@@ -328,6 +346,17 @@ export function Salah() {
             },
           }]
         }
+        if (processed) diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), {
+          stage: 'landmark-processing', message: 'Validated landmarks and calculated smoothed body measurements',
+          at: new Date().toISOString(), details: {
+            timestamp: processed.timestamp, trackingStatus: processed.trackingStatus,
+            landmarkCount: processed.landmarkCount, validLandmarkCount: processed.validLandmarkCount,
+            jointAngles: Object.fromEntries(Object.entries(processed.jointAngles).map(([key, value]) => [key, { degrees: value.value, confidence: value.confidence, available: value.available }])),
+            torsoInclination: { degrees: processed.torsoInclination.value, confidence: processed.torsoInclination.confidence, available: processed.torsoInclination.available },
+            confidence: processed.confidence, qualityWarnings: processed.qualityWarnings,
+            smoothing: processed.smoothing, processingDurationMs: Math.max(processed.processingDurationMs, performance.now() - processingStartedAt),
+          },
+        }]
       },
     })
     trackerRef.current = tracker
@@ -349,6 +378,11 @@ export function Salah() {
     'tracking-lost': ar ? 'فُقد التتبّع. عد إلى منتصف الإطار.' : 'Tracking lost. Move back into the frame.',
     multiple: ar ? 'يظهر أكثر من شخص. استخدم الكاميرا لشخص واحد فقط.' : 'More than one person detected. Please track one person at a time.',
     error: ar ? 'حدث خطأ في تتبّع الجسم.' : 'Pose tracking error.',
+  }
+  const latestProcessedPose = processedPoseRef.current
+  const formatAngle = (name) => {
+    const value = latestProcessedPose?.jointAngles?.[name]
+    return value?.available ? `${value.value.toFixed(1)}° · ${Math.round(value.confidence * 100)}%` : 'Unavailable'
   }
 
   return (
@@ -383,6 +417,23 @@ export function Salah() {
             <dt>Landmark count</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'landmarks-received')?.details?.landmarkCounts?.join(', ') ?? 'None'}</dd>
             <dt>Last error</dt><dd>{[...diagnostics].reverse().find((event) => event.details?.fatal || /error|failure|timeout/i.test(event.stage))?.stage || 'None'}</dd>
           </dl>
+          <h4 style={{ margin: '10px 0 4px' }}>Landmark processing</h4>
+          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 10px', overflowWrap: 'anywhere' }}>
+            <dt>Detected / valid landmarks</dt><dd>{latestProcessedPose ? `${latestProcessedPose.landmarkCount} / ${latestProcessedPose.validLandmarkCount}` : 'None'}</dd>
+            <dt>Landmark confidence</dt><dd>{latestProcessedPose ? `${Math.round(latestProcessedPose.confidence * 100)}%` : 'None'}</dd>
+            <dt>Left / right elbow</dt><dd>{formatAngle('leftElbow')} / {formatAngle('rightElbow')}</dd>
+            <dt>Left / right shoulder</dt><dd>{formatAngle('leftShoulder')} / {formatAngle('rightShoulder')}</dd>
+            <dt>Left / right hip</dt><dd>{formatAngle('leftHip')} / {formatAngle('rightHip')}</dd>
+            <dt>Left / right knee</dt><dd>{formatAngle('leftKnee')} / {formatAngle('rightKnee')}</dd>
+            <dt>Torso inclination</dt><dd>{latestProcessedPose?.torsoInclination?.available ? `${latestProcessedPose.torsoInclination.value.toFixed(1)}° · ${Math.round(latestProcessedPose.torsoInclination.confidence * 100)}%` : 'Unavailable'}</dd>
+            <dt>Landmark quality</dt><dd>{latestProcessedPose?.qualityWarnings?.length ? latestProcessedPose.qualityWarnings.join(', ') : latestProcessedPose ? 'No quality warnings' : 'None'}</dd>
+            <dt>Smoothing</dt><dd>{latestProcessedPose?.smoothing ? `${latestProcessedPose.smoothing.enabled ? 'On' : 'Off'} · factor ${latestProcessedPose.smoothing.factor.toFixed(2)} · ${latestProcessedPose.smoothing.landmarksApplied} joints / ${latestProcessedPose.smoothing.anglesApplied} angles` : 'Not started'}</dd>
+            <dt>Processing duration</dt><dd>{latestProcessedPose ? `${latestProcessedPose.processingDurationMs.toFixed(2)} ms` : 'None'}</dd>
+          </dl>
+          {import.meta.env.DEV && <label style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '8px 0' }}>
+            <input type="checkbox" checked={showAngleOverlay} onChange={(event) => { showAngleOverlayRef.current = event.target.checked; setShowAngleOverlay(event.target.checked) }} />
+            Show joint angle overlay (development)
+          </label>}
           <ol style={{ maxHeight: 180, overflowY: 'auto', paddingLeft: 24 }}>
             {diagnostics.map((event, index) => <li key={`${event.at}-${event.stage}-${index}`} style={{ margin: '5px 0', overflowWrap: 'anywhere' }}>
               <strong>{event.stage}</strong> <time>{event.at}</time> — {event.message} {Object.keys(event.details || {}).length > 0 && <code>{JSON.stringify(event.details)}</code>}

@@ -58,7 +58,7 @@ describe('MediaPipe pose worker pipeline', () => {
     worker.onmessage({ data: { type: 'frame', id: 7, timestamp: 1234, bitmap } })
     expect(landmarker.detectForVideo).toHaveBeenCalledWith(bitmap, 1234)
     expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'result', id: 7, width: 640, height: 480, poses: [expect.arrayContaining([expect.objectContaining({ x: 0, visibility: 0.9 })])],
+      type: 'result', id: 7, timestamp: 1234, width: 640, height: 480, poses: [expect.arrayContaining([expect.objectContaining({ x: 0, visibility: 0.9 })])],
     }))
     expect(worker.postMessage.mock.calls.find(([message]) => message.type === 'result')[0].poses[0]).toHaveLength(33)
     expect(bitmap.close).toHaveBeenCalledOnce()
