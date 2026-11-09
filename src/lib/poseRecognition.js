@@ -269,16 +269,23 @@ export function createPrayerPoseRecognizer({ thresholds = {}, stableFrames, smoo
       }
       if (instant.state === pendingState) pendingCount += 1
       else { pendingState = instant.state; pendingCount = 1 }
+      const newlyCommitted = pendingCount >= config.stableFrames && committed !== pendingState
       if (pendingCount >= config.stableFrames) committed = pendingState
       previous.state = committed
+      const stable = pendingCount >= config.stableFrames
+      const diagnosticReason = stable
+        ? newlyCommitted
+          ? `${instant.state} confirmed after ${pendingCount}/${config.stableFrames} stable frames`
+          : `${instant.state} remains confirmed; current candidate run is stable (${pendingCount}/${config.stableFrames} frames)`
+        : committed === instant.state
+          ? `${instant.state} remains confirmed from an earlier stable run; current candidate run is pending confirmation (${pendingCount}/${config.stableFrames} frames)`
+          : `Candidate ${instant.state} pending temporal confirmation (${pendingCount}/${config.stableFrames} frames)`
       return {
         ...instant, candidate: instant.state, state: committed || 'UNKNOWN',
         candidatePose: instant.state, confirmedPose: committed || 'UNKNOWN',
-        stable: committed === instant.state, committed: Boolean(committed), pendingFrames: pendingCount,
+        stable, committed: Boolean(committed), pendingFrames: pendingCount,
         stableFramesRequired: config.stableFrames, timeSincePreviousMs,
-        diagnosticReason: committed === instant.state
-          ? `${instant.state} confirmed after ${pendingCount}/${config.stableFrames} stable frames`
-          : `Candidate ${instant.state} pending temporal confirmation (${pendingCount}/${config.stableFrames} frames)`,
+        diagnosticReason,
       }
     },
   }

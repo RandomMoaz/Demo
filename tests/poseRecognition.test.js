@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { classifyPrayerPose, createPrayerPoseRecognizer, DEFAULT_POSE_THRESHOLDS, POSE_STATES } from '../src/lib/poseRecognition.js'
+import { createPoseRecognitionHistory } from '../src/lib/poseRecognitionHistory.js'
 
 function processedPose({ torso = 0, knee = 170, hip = 170, seated = false, low = false, raisedHand = false, confidence = 0.95, timestamp = 100 } = {}) {
   const joints = Array.from({ length: 33 }, (_, index) => ({ index, x: 0.5, y: 0.5, z: 0, confidence, reliable: true }))
@@ -90,9 +91,64 @@ describe('rule-based prayer pose recognition', () => {
     const third = recognizer.process(processedPose({ timestamp: 300 }))
     expect(third).toMatchObject({ state: 'QIYAM', candidatePose: 'QIYAM', confirmedPose: 'QIYAM', pendingFrames: 3, stable: true })
     expect(third.diagnosticReason).toContain('confirmed after 3/3')
-    recognizer.process(processedPose({ torso: 55, timestamp: 400 }))
-    expect(recognizer.process(processedPose({ torso: 55, timestamp: 500 })).state).toBe('QIYAM')
-    expect(recognizer.process(processedPose({ torso: 55, timestamp: 600 })).state).toBe('RUKU')
+    const ruku1 = recognizer.process(processedPose({ torso: 55, timestamp: 400 }))
+    const ruku2 = recognizer.process(processedPose({ torso: 55, timestamp: 500 }))
+    const ruku3 = recognizer.process(processedPose({ torso: 55, timestamp: 600 }))
+    expect(ruku1).toMatchObject({ candidatePose: 'RUKU', confirmedPose: 'QIYAM', pendingFrames: 1, stable: false })
+    expect(ruku2).toMatchObject({ candidatePose: 'RUKU', confirmedPose: 'QIYAM', pendingFrames: 2, stable: false })
+    expect(ruku3).toMatchObject({ candidatePose: 'RUKU', confirmedPose: 'RUKU', pendingFrames: 3, stable: true })
+  })
+
+  it('keeps an already-confirmed Qiyam while a restarted Qiyam run is only one frame old', () => {
+    const recognizer = createPrayerPoseRecognizer({ stableFrames: 3 })
+    for (const timestamp of [100, 200, 300]) recognizer.process(processedPose({ timestamp }))
+    recognizer.process(processedPose({ torso: 55, timestamp: 400 })) // transient Ruku candidate resets the streak
+    const returnedQiyam = recognizer.process(processedPose({ timestamp: 500 }))
+    expect(returnedQiyam).toMatchObject({
+      state: 'QIYAM', candidatePose: 'QIYAM', confirmedPose: 'QIYAM',
+      pendingFrames: 1, stable: false, stableFramesRequired: 3,
+    })
+    expect(returnedQiyam.diagnosticReason).toContain('remains confirmed from an earlier stable run')
+    expect(returnedQiyam.diagnosticReason).not.toContain('confirmed after 1/3')
+    const history = createPoseRecognitionHistory({ now: () => 1000, sampleIntervalMs: 0, changeIntervalMs: 0 })
+    const historyEntry = history.record(returnedQiyam, { trackingStatus: 'tracking' })
+    expect(historyEntry).toMatchObject({
+      candidatePose: 'QIYAM', confirmedPose: 'QIYAM', pendingFrames: 1,
+      stable: false, stableFramesRequired: 3,
+    })
+    expect(historyEntry.recognitionReason).toContain('remains confirmed from an earlier stable run')
+    expect(recognizer.process(processedPose({ timestamp: 600 })).pendingFrames).toBe(2)
+    expect(recognizer.process(processedPose({ timestamp: 700 })).diagnosticReason).toContain('stable (3/3 frames)')
+  })
+
+  it('resets the pending counter whenever the candidate changes', () => {
+    const recognizer = createPrayerPoseRecognizer({ stableFrames: 3 })
+    expect(recognizer.process(processedPose({ torso: 55, timestamp: 100 }))).toMatchObject({ candidatePose: 'RUKU', pendingFrames: 1 })
+    const switched = recognizer.process(processedPose({ timestamp: 200 }))
+    expect(switched).toMatchObject({ state: 'UNKNOWN', candidatePose: 'QIYAM', confirmedPose: 'UNKNOWN', pendingFrames: 1, stable: false })
+    expect(recognizer.process(processedPose({ timestamp: 300 }))).toMatchObject({ state: 'UNKNOWN', candidatePose: 'QIYAM', pendingFrames: 2 })
+    expect(recognizer.process(processedPose({ timestamp: 400 }))).toMatchObject({ state: 'QIYAM', confirmedPose: 'QIYAM', pendingFrames: 3, stable: true })
+  })
+
+  it('stores one coherent history entry per recognizer result with truthful confirmation state', () => {
+    let wallClock = 1000
+    const history = createPoseRecognitionHistory({ now: () => wallClock++, sampleIntervalMs: 0, changeIntervalMs: 0 })
+    const recognizer = createPrayerPoseRecognizer({ stableFrames: 3 })
+    for (const timestamp of [100, 200, 300]) {
+      const result = recognizer.process(processedPose({ timestamp }))
+      history.record(result, { trackingStatus: 'tracking', validLandmarkCount: 33, landmarkCount: 33 })
+    }
+    const entries = history.getEntries().reverse()
+    expect(entries.map(({ candidatePose, confirmedPose, pendingFrames, stable }) => ({ candidatePose, confirmedPose, pendingFrames, stable }))).toEqual([
+      { candidatePose: 'QIYAM', confirmedPose: 'UNKNOWN', pendingFrames: 1, stable: false },
+      { candidatePose: 'QIYAM', confirmedPose: 'UNKNOWN', pendingFrames: 2, stable: false },
+      { candidatePose: 'QIYAM', confirmedPose: 'QIYAM', pendingFrames: 3, stable: true },
+    ])
+    expect(entries.map((entry) => entry.recognitionReason)).toEqual([
+      'Candidate QIYAM pending temporal confirmation (1/3 frames)',
+      'Candidate QIYAM pending temporal confirmation (2/3 frames)',
+      'QIYAM confirmed after 3/3 stable frames',
+    ])
   })
 
   it('reports exact torso and knee threshold failures without changing the classification', () => {
@@ -126,11 +182,16 @@ describe('rule-based prayer pose recognition', () => {
   })
 
   it('resets state after tracking loss and recovers after tracking resumes', () => {
-    const recognizer = createPrayerPoseRecognizer({ stableFrames: 1 })
-    expect(recognizer.process(processedPose()).state).toBe('QIYAM')
-    expect(recognizer.process({ trackingStatus: 'no-pose', timestamp: 200 })).toMatchObject({ state: 'UNKNOWN', stable: false, diagnosticReason: 'Recognition history reset: tracking-no-pose', timeSincePreviousMs: 100 })
-    expect(recognizer.process(processedPose({ timestamp: 300 })).timeSincePreviousMs).toBe(100)
-    expect(recognizer.process(processedPose({ timestamp: 400 })).state).toBe('QIYAM')
+    const recognizer = createPrayerPoseRecognizer({ stableFrames: 3 })
+    expect(recognizer.process(processedPose({ timestamp: 100 })).pendingFrames).toBe(1)
+    expect(recognizer.process(processedPose({ timestamp: 200 })).pendingFrames).toBe(2)
+    expect(recognizer.process({ trackingStatus: 'no-pose', timestamp: 250 })).toMatchObject({
+      state: 'UNKNOWN', confirmedPose: 'UNKNOWN', stable: false, pendingFrames: 0,
+      diagnosticReason: 'Recognition history reset: tracking-no-pose', timeSincePreviousMs: 50,
+    })
+    expect(recognizer.process(processedPose({ timestamp: 300 }))).toMatchObject({ candidatePose: 'QIYAM', pendingFrames: 1, stable: false })
+    expect(recognizer.process(processedPose({ timestamp: 400 })).pendingFrames).toBe(2)
+    expect(recognizer.process(processedPose({ timestamp: 500 })).confirmedPose).toBe('QIYAM')
   })
 
   it('reports timestamp gaps that reset temporal confirmation and resumes with a fresh candidate', () => {
