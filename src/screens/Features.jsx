@@ -8,6 +8,7 @@ import { OCR_BLOCK, OCR_TRUST } from '../lib/ocrPrep'
 import { createPrayerCameraController } from '../lib/prayerCamera'
 import { createPoseTracker, drawPoseSkeleton, summarizePoseResult } from '../lib/poseTracker'
 import { createPoseLandmarkProcessor, drawJointAngleLabels } from '../lib/poseLandmarks'
+import { createPrayerPoseRecognizer } from '../lib/poseRecognition'
 
 const Back = ({ onClick }) => (
   <button className="back-ic" onClick={onClick} aria-label="back">
@@ -246,6 +247,8 @@ export function Salah() {
   const diagnosticsRef = useRef([])
   const landmarkProcessorRef = useRef(null)
   const processedPoseRef = useRef(null)
+  const poseRecognizerRef = useRef(null)
+  const recognizedPoseRef = useRef(null)
   const showAngleOverlayRef = useRef(false)
   const [showAngleOverlay, setShowAngleOverlay] = useState(false)
   const hadTrackedPersonRef = useRef(false)
@@ -280,6 +283,9 @@ export function Salah() {
       landmarkProcessorRef.current?.reset()
       landmarkProcessorRef.current = null
       processedPoseRef.current = null
+      poseRecognizerRef.current?.reset()
+      poseRecognizerRef.current = null
+      recognizedPoseRef.current = null
       setPoseStatus('idle')
       setPoseSummary(null)
       setPoseError('')
@@ -291,6 +297,7 @@ export function Salah() {
       return
     }
     landmarkProcessorRef.current = createPoseLandmarkProcessor({ minConfidence: 0.5, smoothingFactor: 0.55 })
+    poseRecognizerRef.current = createPrayerPoseRecognizer({ stableFrames: 3 })
     const tracker = createPoseTracker(videoRef.current, {
       onStatus: (status, detail) => {
         setPoseStatus(status)
@@ -309,6 +316,8 @@ export function Salah() {
           trackingStatus: summary.status,
         })
         processedPoseRef.current = processed || null
+        const recognized = poseRecognizerRef.current?.process(processed || { trackingStatus: 'no-pose' }) || null
+        recognizedPoseRef.current = recognized
         setPoseSummary(summary)
         if (summary.status === 'tracking') {
           hadTrackedPersonRef.current = true
@@ -356,6 +365,10 @@ export function Salah() {
             confidence: processed.confidence, qualityWarnings: processed.qualityWarnings,
             smoothing: processed.smoothing, processingDurationMs: Math.max(processed.processingDurationMs, performance.now() - processingStartedAt),
           },
+        }]
+        if (recognized) diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), {
+          stage: 'pose-recognition', message: 'Rule-based visual posture assessment',
+          at: new Date().toISOString(), details: recognized,
         }]
       },
     })
@@ -418,6 +431,11 @@ export function Salah() {
             <dt>Last error</dt><dd>{[...diagnostics].reverse().find((event) => event.details?.fatal || /error|failure|timeout/i.test(event.stage))?.stage || 'None'}</dd>
           </dl>
           <h4 style={{ margin: '10px 0 4px' }}>Landmark processing</h4>
+          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 10px', overflowWrap: 'anywhere' }}>
+            <dt>Recognized posture</dt><dd>{recognizedPoseRef.current?.state || 'UNKNOWN'}{recognizedPoseRef.current?.stable ? ' · stable' : ' · confirming'}</dd>
+            <dt>Posture confidence</dt><dd>{recognizedPoseRef.current ? `${Math.round(recognizedPoseRef.current.confidence * 100)}% · ${recognizedPoseRef.current.status}` : 'Unavailable'}</dd>
+            <dt>Rule evidence</dt><dd>{recognizedPoseRef.current?.reasons?.join(', ') || 'Insufficient evidence'}</dd>
+          </dl>
           <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 10px', overflowWrap: 'anywhere' }}>
             <dt>Detected / valid landmarks</dt><dd>{latestProcessedPose ? `${latestProcessedPose.landmarkCount} / ${latestProcessedPose.validLandmarkCount}` : 'None'}</dd>
             <dt>Landmark confidence</dt><dd>{latestProcessedPose ? `${Math.round(latestProcessedPose.confidence * 100)}%` : 'None'}</dd>
