@@ -9,6 +9,7 @@ import { createPrayerCameraController } from '../lib/prayerCamera'
 import { createPoseTracker, drawPoseSkeleton, summarizePoseResult } from '../lib/poseTracker'
 import { createPoseLandmarkProcessor, drawJointAngleLabels } from '../lib/poseLandmarks'
 import { createPrayerPoseRecognizer } from '../lib/poseRecognition'
+import { createPoseRecognitionHistory } from '../lib/poseRecognitionHistory'
 
 const Back = ({ onClick }) => (
   <button className="back-ic" onClick={onClick} aria-label="back">
@@ -240,6 +241,7 @@ export function Salah() {
   const [poseSummary, setPoseSummary] = useState(null)
   const [poseError, setPoseError] = useState('')
   const [diagnostics, setDiagnostics] = useState([])
+  const [poseHistory, setPoseHistory] = useState([])
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const cameraRef = useRef(null)
@@ -249,6 +251,8 @@ export function Salah() {
   const processedPoseRef = useRef(null)
   const poseRecognizerRef = useRef(null)
   const recognizedPoseRef = useRef(null)
+  const poseHistoryRecorderRef = useRef(null)
+  if (!poseHistoryRecorderRef.current) poseHistoryRecorderRef.current = createPoseRecognitionHistory({ limit: 30 })
   const showAngleOverlayRef = useRef(false)
   const [showAngleOverlay, setShowAngleOverlay] = useState(false)
   const hadTrackedPersonRef = useRef(false)
@@ -318,6 +322,15 @@ export function Salah() {
         processedPoseRef.current = processed || null
         const recognized = poseRecognizerRef.current?.process(processed || { trackingStatus: 'no-pose' }) || null
         recognizedPoseRef.current = recognized
+        if (recognized) {
+          const recorded = poseHistoryRecorderRef.current.record(recognized, {
+            trackingStatus: processed?.trackingStatus || summary.status,
+            landmarkCount: processed?.landmarkCount ?? summary.landmarks?.length,
+            validLandmarkCount: processed?.validLandmarkCount,
+            confidence: processed?.confidence,
+          })
+          if (recorded) setPoseHistory(poseHistoryRecorderRef.current.getEntries())
+        }
         setPoseSummary(summary)
         if (summary.status === 'tracking') {
           hadTrackedPersonRef.current = true
@@ -416,7 +429,7 @@ export function Salah() {
           <p style={{ margin: 0 }}>{trackingText[poseStatus] || trackingText.initializing}{poseSummary && poseSummary.visible > 0 && poseStatus !== 'multiple' && ` · ${ar ? 'الثقة' : 'Confidence'} ${Math.round(poseSummary.confidence * 100)}% · ${poseSummary.visible}/33`}</p>
           {poseStatus === 'error' && <p style={{ margin: '4px 0 0', color: 'var(--coral)', overflowWrap: 'anywhere' }}>{poseError}</p>}
         </div>}
-        {diagnostics.length > 0 && <details style={{ marginTop: 10, fontSize: 11, color: 'var(--muted)' }}>
+        {(cameraState === 'active' || diagnostics.length > 0 || poseHistory.length > 0) && <details style={{ marginTop: 10, fontSize: 11, color: 'var(--muted)' }}>
           <summary>Pose diagnostics ({diagnostics.length})</summary>
           <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 10px', overflowWrap: 'anywhere' }}>
             <dt>Worker</dt><dd>{diagnostics.some((event) => event.stage === 'worker-ready') ? 'Ready' : diagnostics.some((event) => event.stage === 'worker-start') ? 'Starting / initializing' : 'Not started'}</dd>
@@ -436,6 +449,22 @@ export function Salah() {
             <dt>Posture confidence</dt><dd>{recognizedPoseRef.current ? `${Math.round(recognizedPoseRef.current.confidence * 100)}% · ${recognizedPoseRef.current.status}` : 'Unavailable'}</dd>
             <dt>Rule evidence</dt><dd>{recognizedPoseRef.current?.reasons?.join(', ') || 'Insufficient evidence'}</dd>
           </dl>
+          <details style={{ margin: '10px 0', borderTop: '1px solid var(--line)', paddingTop: 8 }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Pose Recognition History ({poseHistory.length}/30)</summary>
+            <p style={{ margin: '7px 0', lineHeight: 1.45 }}>Recent recognition summaries only. No camera images or video are stored.</p>
+            <button type="button" onClick={() => { poseHistoryRecorderRef.current.clear(); setPoseHistory([]) }} disabled={poseHistory.length === 0} style={{ minHeight: 36, marginBottom: 8 }}>
+              Clear History
+            </button>
+            {poseHistory.length === 0 ? <p style={{ margin: '5px 0' }}>No results recorded yet.</p> :
+              <ol aria-label="Recent pose recognition results" style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 280, overflowY: 'auto', display: 'grid', gap: 7 }}>
+                {poseHistory.map((entry, index) => <li key={`${entry.timestamp}-${index}`} style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '8px 10px', lineHeight: 1.45, overflowWrap: 'anywhere' }}>
+                  <time dateTime={entry.timestamp} style={{ display: 'block', fontSize: 10.5 }}>{new Date(entry.timestamp).toLocaleString(ar ? 'ar' : 'en', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })}</time>
+                  <strong>{entry.pose}</strong>{entry.candidate !== entry.pose ? ` · candidate ${entry.candidate}` : ''} · {Math.round(entry.confidence * 100)}% · {entry.status}{entry.stable ? ' · stable' : ''}
+                  {entry.evidence.length > 0 && <div>Evidence: {entry.evidence.join(', ')}</div>}
+                  <div>Tracking: {entry.trackingStatus} · landmarks {entry.validLandmarkCount ?? '—'}/{entry.landmarkCount ?? '—'}{entry.trackingConfidence !== null ? ` · ${Math.round(entry.trackingConfidence * 100)}%` : ''}</div>
+                </li>)}
+              </ol>}
+          </details>
           <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 10px', overflowWrap: 'anywhere' }}>
             <dt>Detected / valid landmarks</dt><dd>{latestProcessedPose ? `${latestProcessedPose.landmarkCount} / ${latestProcessedPose.validLandmarkCount}` : 'None'}</dd>
             <dt>Landmark confidence</dt><dd>{latestProcessedPose ? `${Math.round(latestProcessedPose.confidence * 100)}%` : 'None'}</dd>
