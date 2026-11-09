@@ -459,9 +459,16 @@ export function Salah() {
               <ol aria-label="Recent pose recognition results" style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 280, overflowY: 'auto', display: 'grid', gap: 7 }}>
                 {poseHistory.map((entry, index) => <li key={`${entry.timestamp}-${index}`} style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '8px 10px', lineHeight: 1.45, overflowWrap: 'anywhere' }}>
                   <time dateTime={entry.timestamp} style={{ display: 'block', fontSize: 10.5 }}>{new Date(entry.timestamp).toLocaleString(ar ? 'ar' : 'en', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })}</time>
-                  <strong>{entry.pose}</strong>{entry.candidate !== entry.pose ? ` · candidate ${entry.candidate}` : ''} · {Math.round(entry.confidence * 100)}% · {entry.status}{entry.stable ? ' · stable' : ''}
-                  {entry.evidence.length > 0 && <div>Evidence: {entry.evidence.join(', ')}</div>}
-                  <div>Tracking: {entry.trackingStatus} · landmarks {entry.validLandmarkCount ?? '—'}/{entry.landmarkCount ?? '—'}{entry.trackingConfidence !== null ? ` · ${Math.round(entry.trackingConfidence * 100)}%` : ''}</div>
+                  <div><strong>Candidate:</strong> {entry.candidatePose} · <strong>Confirmed:</strong> {entry.confirmedPose}</div>
+                  <div>{entry.candidatePose !== 'UNKNOWN' ? `${Math.round(entry.confidence * 100)}% candidate score` : 'No pose score'}{entry.decisionConfidence !== null ? ` · ${Math.round(entry.decisionConfidence * 100)}% input confidence` : ''} · {entry.status}{entry.stable ? ` · stable for ${entry.pendingFrames}+ frames (required ${entry.stableFramesRequired ?? '—'})` : entry.pendingFrames !== null ? ` · pending ${entry.pendingFrames}/${entry.stableFramesRequired ?? '—'} frames` : ''}</div>
+                  <div>Reason: {entry.recognitionReason}</div>
+                  {entry.evidence.length > 0 && <div>Candidate evidence: {entry.evidence.join(', ')}</div>}
+                  {entry.rejectionReasons.length > 0 && <div>Rejected: {entry.rejectionReasons.join('; ')}</div>}
+                  {entry.measurements && <div style={{ marginTop: 3 }}>
+                    Torso: {entry.measurements.torsoInclination.available ? `${entry.measurements.torsoInclination.degrees.toFixed(1)}°` : 'unavailable'} ({entry.measurements.torsoInclination.confidence !== null ? `${Math.round(entry.measurements.torsoInclination.confidence * 100)}%` : 'no confidence'}) · Left knee: {entry.measurements.leftKnee.available ? `${entry.measurements.leftKnee.degrees.toFixed(1)}°` : 'unavailable'} ({entry.measurements.leftKnee.confidence !== null ? `${Math.round(entry.measurements.leftKnee.confidence * 100)}%` : 'no confidence'}) · Right knee: {entry.measurements.rightKnee.available ? `${entry.measurements.rightKnee.degrees.toFixed(1)}°` : 'unavailable'} ({entry.measurements.rightKnee.confidence !== null ? `${Math.round(entry.measurements.rightKnee.confidence * 100)}%` : 'no confidence'})
+                  </div>}
+                  {entry.criticalLandmarks.some((point) => !point.reliable) && <div>Critical landmarks unavailable: {entry.criticalLandmarks.filter((point) => !point.reliable).map((point) => `${point.name} (${point.reason})`).join(', ')}</div>}
+                  <div>Tracking: {entry.trackingStatus} · valid landmarks {entry.validLandmarkCount ?? '—'}/{entry.landmarkCount ?? '—'}{entry.trackingConfidence !== null ? ` · ${Math.round(entry.trackingConfidence * 100)}%` : ''}{entry.timeSincePreviousMs !== null ? ` · ${entry.timeSincePreviousMs >= 0 ? '+' : ''}${entry.timeSincePreviousMs}ms since previous result` : ''}</div>
                 </li>)}
               </ol>}
           </details>

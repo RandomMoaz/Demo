@@ -52,7 +52,7 @@ describe('pose recognition history screen integration', () => {
     expect(details[0].props.open).toBeUndefined()
     expect(details[1].props.open).toBeUndefined()
     expect(root.root.findAllByType('summary').some((summary) => String(summary.props.children).includes('Pose Recognition History'))).toBe(true)
-    expect(root.root.findAll((node) => node.type === 'strong' && node.children.includes('UNKNOWN')).length).toBeGreaterThan(0)
+    expect(JSON.stringify(root.toJSON())).toContain('UNKNOWN')
 
     const clear = root.root.findAllByType('button').find((button) => button.children.includes('Clear History'))
     await act(async () => clear.props.onClick())

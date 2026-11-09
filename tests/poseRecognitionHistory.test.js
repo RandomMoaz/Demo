@@ -20,6 +20,33 @@ describe('pose recognition history', () => {
     })
   })
 
+  it('retains candidate, confirmed state, stability progress, measurements, rejection reason, and timing', () => {
+    const recorder = createPoseRecognitionHistory({ now: () => 1000 })
+    const entry = recorder.record(recognized('UNKNOWN', {
+      candidatePose: 'QIYAM', confirmedPose: 'UNKNOWN', pendingFrames: 2, stableFramesRequired: 3,
+      decisionConfidence: 0.88,
+      diagnosticReason: 'Candidate QIYAM pending temporal confirmation (2/3 frames)',
+      rejectionReasons: ['QIYAM knee average below threshold'], timeSincePreviousMs: 120,
+      measurements: {
+        torsoInclination: { degrees: 4, confidence: 0.93, available: true },
+        leftKnee: { degrees: 164, confidence: 0.9, available: true },
+        rightKnee: { degrees: 160, confidence: 0.88, available: true },
+      },
+      confidenceBreakdown: { overall: 0.92, torsoInclination: 0.93, leftKnee: 0.9, rightKnee: 0.88 },
+      criticalLandmarks: [{ index: 25, name: 'leftKnee', reliable: true, confidence: 0.9, reason: null }],
+      validLandmarkCount: 32, landmarkCount: 33,
+    }), quality())
+    expect(entry).toMatchObject({
+      candidatePose: 'QIYAM', confirmedPose: 'UNKNOWN', pendingFrames: 2, stableFramesRequired: 3,
+      decisionConfidence: 0.88,
+      recognitionReason: 'Candidate QIYAM pending temporal confirmation (2/3 frames)',
+      rejectionReasons: ['QIYAM knee average below threshold'], timeSincePreviousMs: 120,
+      measurements: { torsoInclination: { degrees: 4 }, leftKnee: { degrees: 164 }, rightKnee: { degrees: 160 } },
+      confidenceBreakdown: { overall: 0.92 }, criticalLandmarks: [{ name: 'leftKnee' }],
+      validLandmarkCount: 32, landmarkCount: 33,
+    })
+  })
+
   it('records UNKNOWN and tracking-loss results', () => {
     const recorder = createPoseRecognitionHistory({ now: vi.fn().mockReturnValueOnce(1000).mockReturnValueOnce(1400) })
     recorder.record(recognized('UNKNOWN', { candidate: 'UNKNOWN', confidence: 0, status: 'tracking-unavailable', stable: false, reasons: ['tracking-no-pose'] }), quality('no-pose'))
@@ -88,5 +115,26 @@ describe('pose recognition history', () => {
     now = 1800
     recorder.record(recognized('QIYAM'), quality('tracking'))
     expect(recorder.getEntries().map((entry) => entry.trackingStatus)).toEqual(['tracking', 'tracking-lost', 'tracking'])
+  })
+
+  it('preserves timestamp-gap reset diagnostics in the sampled history', () => {
+    let now = 1000
+    const recorder = createPoseRecognitionHistory({ now: () => now })
+    recorder.record(recognized('UNKNOWN', {
+      candidatePose: 'UNKNOWN', confirmedPose: 'UNKNOWN', status: 'tracking-unavailable', stable: false,
+      diagnosticReason: 'Recognition history reset: timestamp-gap-over-1800ms',
+      rejectionReasons: ['tracking-history-reset', 'timestamp-gap-over-1800ms'],
+      timeSincePreviousMs: 1801, pendingFrames: 0, stableFramesRequired: 3,
+    }), quality('tracking'))
+    now += 400
+    recorder.record(recognized('QIYAM', {
+      candidatePose: 'QIYAM', confirmedPose: 'UNKNOWN', pendingFrames: 1, stableFramesRequired: 3,
+      diagnosticReason: 'Candidate QIYAM pending temporal confirmation (1/3 frames)', timeSincePreviousMs: 99,
+    }), quality('tracking'))
+    expect(recorder.getEntries().map((entry) => entry.recognitionReason)).toEqual([
+      'Candidate QIYAM pending temporal confirmation (1/3 frames)',
+      'Recognition history reset: timestamp-gap-over-1800ms',
+    ])
+    expect(recorder.getEntries()[1]).toMatchObject({ timeSincePreviousMs: 1801, rejectionReasons: ['tracking-history-reset', 'timestamp-gap-over-1800ms'] })
   })
 })

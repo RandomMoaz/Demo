@@ -34,6 +34,7 @@ const joint = (pose, index) => pose?.joints?.[index]
 const reliable = (point) => point?.reliable === true && finite(point.x) && finite(point.y)
 const available = (item) => item?.available === true && finite(item.value) && finite(item.confidence)
 const clamp01 = (value) => Math.max(0, Math.min(1, value))
+const CRITICAL_LANDMARK_NAMES = Object.freeze({ 11: 'leftShoulder', 12: 'rightShoulder', 23: 'leftHip', 24: 'rightHip', 25: 'leftKnee', 26: 'rightKnee', 27: 'leftAnkle', 28: 'rightAnkle' })
 
 function avgReliable(items) {
   const values = items.filter(available)
@@ -57,16 +58,83 @@ function evidenceConfidence(pose, measurements) {
   return confidence.length ? Math.min(...confidence) : 0
 }
 
+function measurementSnapshot(item) {
+  return {
+    degrees: available(item) ? item.value : null,
+    confidence: finite(item?.confidence) ? item.confidence : null,
+    available: available(item),
+    reason: item?.reason || (available(item) ? null : 'unavailable'),
+  }
+}
+
+function poseDiagnosticSnapshot(pose, config, decisionConfidence = 0) {
+  const torso = pose?.torsoInclination
+  const leftKnee = measure(pose, 'leftKnee'), rightKnee = measure(pose, 'rightKnee')
+  const knees = avgReliable([leftKnee, rightKnee])
+  const criticalIndexes = [11, 12, 23, 24, 25, 26, 27, 28]
+  const criticalLandmarks = criticalIndexes.map((index) => {
+    const point = joint(pose, index)
+    return {
+      index, name: point?.name || CRITICAL_LANDMARK_NAMES[index],
+      reliable: point?.reliable === true,
+      confidence: finite(point?.confidence) ? point.confidence : null,
+      reason: point?.reason || (point?.reliable === true ? null : 'missing-or-unreliable'),
+    }
+  })
+  const confidenceBreakdown = {
+    overall: finite(pose?.confidence) ? pose.confidence : 0,
+    torsoInclination: finite(torso?.confidence) ? torso.confidence : null,
+    leftKnee: finite(leftKnee?.confidence) ? leftKnee.confidence : null,
+    rightKnee: finite(rightKnee?.confidence) ? rightKnee.confidence : null,
+    leftHip: finite(measure(pose, 'leftHip')?.confidence) ? measure(pose, 'leftHip').confidence : null,
+    rightHip: finite(measure(pose, 'rightHip')?.confidence) ? measure(pose, 'rightHip').confidence : null,
+    leftShoulder: finite(measure(pose, 'leftShoulder')?.confidence) ? measure(pose, 'leftShoulder').confidence : null,
+    rightShoulder: finite(measure(pose, 'rightShoulder')?.confidence) ? measure(pose, 'rightShoulder').confidence : null,
+  }
+  const lowConfidenceMeasurements = Object.entries(confidenceBreakdown)
+    .filter(([key, value]) => key !== 'overall' && finite(value) && value < config.minConfidence)
+    .map(([key, value]) => `${key} confidence ${Math.round(value * 100)}% is below ${Math.round(config.minConfidence * 100)}%`)
+  const ruleRejections = []
+  const torsoAngle = available(torso) ? Math.abs(torso.value) : null
+  if (!available(torso)) ruleRejections.push('QIYAM: torso inclination is unavailable')
+  else if (torsoAngle > config.uprightTorsoDegrees) ruleRejections.push(`QIYAM: torso inclination ${torsoAngle.toFixed(1)}° exceeds ${config.uprightTorsoDegrees}°`)
+  if (!knees) ruleRejections.push('QIYAM: no reliable knee angle is available')
+  else if (knees.value < config.standingKneeDegrees) ruleRejections.push(`QIYAM: average available knee angle ${knees.value.toFixed(1)}° is below ${config.standingKneeDegrees}°`)
+  ruleRejections.push(...lowConfidenceMeasurements)
+  const unreliableCritical = criticalLandmarks.filter((point) => !point.reliable).map((point) => point.name)
+  if (unreliableCritical.length) ruleRejections.push(`Critical landmarks unavailable or unreliable: ${unreliableCritical.join(', ')}`)
+
+  return {
+    measurements: {
+      torsoInclination: measurementSnapshot(torso),
+      leftKnee: measurementSnapshot(leftKnee),
+      rightKnee: measurementSnapshot(rightKnee),
+      averageAvailableKneeAngle: knees?.value ?? null,
+      averageKneeConfidence: knees?.confidence ?? null,
+    },
+    confidenceBreakdown,
+    criticalLandmarks,
+    validLandmarkCount: finite(pose?.validLandmarkCount) ? pose.validLandmarkCount : 0,
+    landmarkCount: finite(pose?.landmarkCount) ? pose.landmarkCount : 0,
+    trackingStatus: pose?.trackingStatus || 'unknown',
+    decisionConfidence,
+    ruleRejections,
+    lowConfidenceMeasurements,
+  }
+}
+
 /** Score plausible postures from processed landmarks; unavailable evidence is never inferred. */
 export function classifyPrayerPose(pose, { thresholds = {}, previousPose = null } = {}) {
   const config = { ...DEFAULT_POSE_THRESHOLDS, ...thresholds }
   const base = { state: 'UNKNOWN', confidence: 0, postureConfidence: 0, status: 'insufficient-evidence', candidates: [], reasons: [] }
-  if (!pose || typeof pose !== 'object') return { ...base, reasons: ['missing-processed-pose'] }
+  if (!pose || typeof pose !== 'object') return { ...base, diagnosticReason: 'No processed pose was supplied', rejectionReasons: ['missing-processed-pose'] }
   if (['no-pose', 'tracking-lost', 'multiple', 'unknown', 'invalid'].includes(pose.trackingStatus)) {
-    return { ...base, status: 'tracking-unavailable', reasons: [`tracking-${pose.trackingStatus}`] }
+    const diagnostics = poseDiagnosticSnapshot(pose, config)
+    return { ...base, ...diagnostics, status: 'tracking-unavailable', diagnosticReason: `Tracking unavailable: ${pose.trackingStatus}`, rejectionReasons: [`tracking-${pose.trackingStatus}`] }
   }
   if (!finite(pose.validLandmarkCount) || pose.validLandmarkCount < config.minValidLandmarks) {
-    return { ...base, reasons: ['too-few-valid-landmarks'] }
+    const diagnostics = poseDiagnosticSnapshot(pose, config)
+    return { ...base, ...diagnostics, diagnosticReason: `Only ${pose?.validLandmarkCount ?? 0} valid landmarks; ${config.minValidLandmarks} required`, rejectionReasons: ['too-few-valid-landmarks'] }
   }
 
   const torso = pose.torsoInclination
@@ -79,7 +147,12 @@ export function classifyPrayerPose(pose, { thresholds = {}, previousPose = null 
   const order = verticalOrder(pose)
   const personHeight = order ? Math.max(0.001, order.knees - order.shoulders) : null
   const confidence = evidenceConfidence(pose, [torso, knees, hips, shoulders])
-  if (confidence < config.minConfidence) return { ...base, confidence, reasons: ['low-measurement-confidence'] }
+  const diagnostics = poseDiagnosticSnapshot(pose, config, confidence)
+  if (confidence < config.minConfidence) {
+    const rejectionReasons = ['low-measurement-confidence', ...diagnostics.ruleRejections]
+    if (!diagnostics.lowConfidenceMeasurements.length) rejectionReasons.push(`Decision confidence ${Math.round(confidence * 100)}% is below ${Math.round(config.minConfidence * 100)}%`)
+    return { ...base, ...diagnostics, confidence, rejectionReasons, diagnosticReason: rejectionReasons.join('; '), reasons: ['low-measurement-confidence'] }
+  }
 
   const candidates = []
   const add = (state, score, reasons) => { if (score > 0) candidates.push({ state, score: clamp01(score), reasons }) }
@@ -131,12 +204,15 @@ export function classifyPrayerPose(pose, { thresholds = {}, previousPose = null 
   }
 
   candidates.sort((a, b) => b.score - a.score)
-  if (!candidates.length) return { ...base, confidence, reasons: ['no-rule-matched'] }
+  if (!candidates.length) {
+    const rejectionReasons = ['no-rule-matched', ...diagnostics.ruleRejections]
+    return { ...base, ...diagnostics, confidence, rejectionReasons, diagnosticReason: rejectionReasons.join('; '), reasons: ['no-rule-matched'] }
+  }
   if (candidates.length > 1 && candidates[0].score - candidates[1].score < config.candidateMargin) {
-    return { ...base, confidence, status: 'ambiguous', candidates: candidates.slice(0, 3), reasons: ['overlapping-geometric-rules'] }
+    return { ...base, ...diagnostics, confidence, status: 'ambiguous', candidates: candidates.slice(0, 3), diagnosticReason: 'Overlapping geometric rules have similar scores', rejectionReasons: ['overlapping-geometric-rules'], reasons: ['overlapping-geometric-rules'] }
   }
   const best = candidates[0]
-  return { state: best.state, confidence: best.score, postureConfidence: best.score, status: 'candidate', candidates: candidates.slice(0, 3), reasons: best.reasons }
+  return { ...diagnostics, state: best.state, confidence: best.score, postureConfidence: best.score, status: 'candidate', candidates: candidates.slice(0, 3), diagnosticReason: `Candidate ${best.state}: ${best.reasons.join(', ')}`, rejectionReasons: [], reasons: best.reasons }
 }
 
 /** Stateful hysteresis wrapper; tracking interruptions clear all posture history. */
@@ -150,26 +226,46 @@ export function createPrayerPoseRecognizer({ thresholds = {}, stableFrames, smoo
   let pendingCount = 0
   let previous = null
   let lastTimestamp = null
+  let lastResultTimestamp = null
 
-  const reset = () => { committed = null; pendingState = null; pendingCount = 0; previous = null; lastTimestamp = null }
+  const reset = () => { committed = null; pendingState = null; pendingCount = 0; previous = null; lastTimestamp = null; lastResultTimestamp = null }
   return {
     reset,
     process(pose) {
       const timestamp = finite(pose?.timestamp) ? pose.timestamp : null
-      if (['no-pose', 'tracking-lost', 'multiple', 'unknown', 'invalid'].includes(pose?.trackingStatus) ||
-          (lastTimestamp !== null && timestamp !== null && (timestamp <= lastTimestamp || timestamp - lastTimestamp > config.historyFrames))) {
+      const previousTimestamp = lastResultTimestamp
+      const timeSincePreviousMs = timestamp !== null && previousTimestamp !== null ? timestamp - previousTimestamp : null
+      const trackingLost = ['no-pose', 'tracking-lost', 'multiple', 'unknown', 'invalid'].includes(pose?.trackingStatus)
+      const nonIncreasingTimestamp = lastTimestamp !== null && timestamp !== null && timestamp <= lastTimestamp
+      const timestampGap = lastTimestamp !== null && timestamp !== null && timestamp - lastTimestamp > config.historyFrames
+      if (trackingLost || nonIncreasingTimestamp || timestampGap) {
+        const resetReason = trackingLost ? `tracking-${pose.trackingStatus}` : nonIncreasingTimestamp ? 'non-increasing-timestamp' : `timestamp-gap-over-${config.historyFrames}ms`
+        const diagnostics = poseDiagnosticSnapshot(pose, config)
         reset()
-        return { state: 'UNKNOWN', confidence: 0, status: 'tracking-unavailable', stable: false, candidate: 'UNKNOWN', reasons: ['tracking-history-reset'] }
+        if (timestamp !== null) lastResultTimestamp = timestamp
+        return {
+          ...diagnostics, state: 'UNKNOWN', candidate: 'UNKNOWN', candidatePose: 'UNKNOWN', confirmedPose: 'UNKNOWN',
+          confidence: 0, status: 'tracking-unavailable', stable: false, committed: false,
+          pendingFrames: 0, stableFramesRequired: config.stableFrames, timeSincePreviousMs,
+          diagnosticReason: `Recognition history reset: ${resetReason}`,
+          rejectionReasons: ['tracking-history-reset', resetReason], reasons: ['tracking-history-reset'],
+        }
       }
       const angles = Object.fromEntries(['leftHip', 'rightHip', 'leftKnee', 'rightKnee', 'leftShoulder', 'rightShoulder']
         .map((key) => [key, available(measure(pose, key)) ? measure(pose, key).value : null]))
       const instant = classifyPrayerPose(pose, { thresholds: config, previousPose: { ...previous, state: committed || null } })
       if (timestamp !== null) lastTimestamp = timestamp
+      if (timestamp !== null) lastResultTimestamp = timestamp
       previous = { state: committed || null, angles }
 
       if (instant.state === 'UNKNOWN') {
         pendingState = null; pendingCount = 0
-        return { ...instant, state: committed || 'UNKNOWN', candidate: 'UNKNOWN', stable: false, committed: Boolean(committed) }
+        return {
+          ...instant, state: committed || 'UNKNOWN', candidate: 'UNKNOWN', candidatePose: 'UNKNOWN',
+          confirmedPose: committed || 'UNKNOWN', stable: false, committed: Boolean(committed), pendingFrames: 0,
+          stableFramesRequired: config.stableFrames, timeSincePreviousMs,
+          diagnosticReason: instant.diagnosticReason || instant.reasons.join(', '),
+        }
       }
       if (instant.state === pendingState) pendingCount += 1
       else { pendingState = instant.state; pendingCount = 1 }
@@ -177,7 +273,12 @@ export function createPrayerPoseRecognizer({ thresholds = {}, stableFrames, smoo
       previous.state = committed
       return {
         ...instant, candidate: instant.state, state: committed || 'UNKNOWN',
+        candidatePose: instant.state, confirmedPose: committed || 'UNKNOWN',
         stable: committed === instant.state, committed: Boolean(committed), pendingFrames: pendingCount,
+        stableFramesRequired: config.stableFrames, timeSincePreviousMs,
+        diagnosticReason: committed === instant.state
+          ? `${instant.state} confirmed after ${pendingCount}/${config.stableFrames} stable frames`
+          : `Candidate ${instant.state} pending temporal confirmation (${pendingCount}/${config.stableFrames} frames)`,
       }
     },
   }
