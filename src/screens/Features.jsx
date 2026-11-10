@@ -10,6 +10,7 @@ import { createPoseTracker, drawPoseSkeleton, summarizePoseResult } from '../lib
 import { createPoseLandmarkProcessor, drawJointAngleLabels } from '../lib/poseLandmarks'
 import { createPrayerPoseRecognizer } from '../lib/poseRecognition'
 import { createPoseRecognitionHistory } from '../lib/poseRecognitionHistory'
+import { createPrayerSequenceRecognizer } from '../lib/prayerSequence'
 
 const Back = ({ onClick }) => (
   <button className="back-ic" onClick={onClick} aria-label="back">
@@ -251,6 +252,8 @@ export function Salah() {
   const processedPoseRef = useRef(null)
   const poseRecognizerRef = useRef(null)
   const recognizedPoseRef = useRef(null)
+  const sequenceRecognizerRef = useRef(null)
+  const sequenceStateRef = useRef(null)
   const poseHistoryRecorderRef = useRef(null)
   if (!poseHistoryRecorderRef.current) poseHistoryRecorderRef.current = createPoseRecognitionHistory({ limit: 30 })
   const showAngleOverlayRef = useRef(false)
@@ -290,6 +293,9 @@ export function Salah() {
       poseRecognizerRef.current?.reset()
       poseRecognizerRef.current = null
       recognizedPoseRef.current = null
+      sequenceRecognizerRef.current?.reset()
+      sequenceRecognizerRef.current = null
+      sequenceStateRef.current = null
       setPoseStatus('idle')
       setPoseSummary(null)
       setPoseError('')
@@ -302,6 +308,7 @@ export function Salah() {
     }
     landmarkProcessorRef.current = createPoseLandmarkProcessor({ minConfidence: 0.5, smoothingFactor: 0.55 })
     poseRecognizerRef.current = createPrayerPoseRecognizer({ stableFrames: 3 })
+    sequenceRecognizerRef.current = createPrayerSequenceRecognizer()
     const tracker = createPoseTracker(videoRef.current, {
       onStatus: (status, detail) => {
         setPoseStatus(status)
@@ -322,12 +329,21 @@ export function Salah() {
         processedPoseRef.current = processed || null
         const recognized = poseRecognizerRef.current?.process(processed || { trackingStatus: 'no-pose' }) || null
         recognizedPoseRef.current = recognized
+        const sequence = recognized ? sequenceRecognizerRef.current?.process(recognized) || null : null
+        sequenceStateRef.current = sequence
+        if (sequence && !['repeated-pose', 'unconfirmed-pose'].includes(sequence.eventType)) {
+          diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), {
+            stage: 'prayer-sequence', message: `Sequence ${sequence.transitionValidationResult}`,
+            at: new Date().toISOString(), details: sequence,
+          }]
+        }
         if (recognized) {
           const recorded = poseHistoryRecorderRef.current.record(recognized, {
             trackingStatus: processed?.trackingStatus || summary.status,
             landmarkCount: processed?.landmarkCount ?? summary.landmarks?.length,
             validLandmarkCount: processed?.validLandmarkCount,
             confidence: processed?.confidence,
+            sequence,
           })
           if (recorded) setPoseHistory(poseHistoryRecorderRef.current.getEntries())
         }
@@ -449,6 +465,16 @@ export function Salah() {
             <dt>Posture confidence</dt><dd>{recognizedPoseRef.current ? `${Math.round(recognizedPoseRef.current.confidence * 100)}% · ${recognizedPoseRef.current.status}` : 'Unavailable'}</dd>
             <dt>Rule evidence</dt><dd>{recognizedPoseRef.current?.reasons?.join(', ') || 'Insufficient evidence'}</dd>
           </dl>
+          <h4 style={{ margin: '10px 0 4px' }}>Prayer movement sequence</h4>
+          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 10px', overflowWrap: 'anywhere' }}>
+            <dt>Current sequence state</dt><dd>{sequenceStateRef.current?.sequenceState || 'not-started'}</dd>
+            <dt>Previous confirmed pose</dt><dd>{sequenceStateRef.current?.previousConfirmedPose || 'None'}</dd>
+            <dt>Last confirmed pose</dt><dd>{sequenceStateRef.current?.lastConfirmedPose || 'None'}</dd>
+            <dt>Expected next pose</dt><dd>{sequenceStateRef.current?.expectedNextPoses?.join(' or ') || 'None'}</dd>
+            <dt>Transition validation</dt><dd>{sequenceStateRef.current?.transitionValidationResult || 'Not started'}</dd>
+            <dt>Rejection reason</dt><dd>{sequenceStateRef.current?.rejectionReason || 'None'}</dd>
+            <dt>Sequence tracking</dt><dd>{sequenceStateRef.current?.trackingStatus || poseStatus}</dd>
+          </dl>
           <details style={{ margin: '10px 0', borderTop: '1px solid var(--line)', paddingTop: 8 }}>
             <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Pose Recognition History ({poseHistory.length}/30)</summary>
             <p style={{ margin: '7px 0', lineHeight: 1.45 }}>Recent recognition summaries only. No camera images or video are stored.</p>
@@ -469,6 +495,7 @@ export function Salah() {
                   </div>}
                   {entry.criticalLandmarks.some((point) => !point.reliable) && <div>Critical landmarks unavailable: {entry.criticalLandmarks.filter((point) => !point.reliable).map((point) => `${point.name} (${point.reason})`).join(', ')}</div>}
                   <div>Tracking: {entry.trackingStatus} · valid landmarks {entry.validLandmarkCount ?? '—'}/{entry.landmarkCount ?? '—'}{entry.trackingConfidence !== null ? ` · ${Math.round(entry.trackingConfidence * 100)}%` : ''}{entry.timeSincePreviousMs !== null ? ` · ${entry.timeSincePreviousMs >= 0 ? '+' : ''}${entry.timeSincePreviousMs}ms since previous result` : ''}</div>
+                  {entry.sequence && <div>Sequence: {entry.sequence.sequenceState} · previous {entry.sequence.previousConfirmedPose || '—'} · last {entry.sequence.lastConfirmedPose || '—'} · expected {entry.sequence.expectedNextPoses.join(' or ') || '—'} · {entry.sequence.transitionValidationResult}{entry.sequence.rejectionReason ? ` · ${entry.sequence.rejectionReason}` : ''} · tracking {entry.sequence.trackingStatus}</div>}
                 </li>)}
               </ol>}
           </details>

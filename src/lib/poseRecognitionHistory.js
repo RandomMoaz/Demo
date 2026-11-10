@@ -62,6 +62,17 @@ export function createPoseRecognitionHistory({
         validLandmarkCount: finite(recognition?.validLandmarkCount) ? recognition.validLandmarkCount : finite(quality.validLandmarkCount) ? quality.validLandmarkCount : null,
         trackingConfidence: finite(quality.confidence) ? Math.max(0, Math.min(1, quality.confidence)) : null,
         timeSincePreviousMs: finite(recognition?.timeSincePreviousMs) ? recognition.timeSincePreviousMs : null,
+        sequence: quality.sequence && typeof quality.sequence === 'object' ? {
+          sequenceState: quality.sequence.sequenceState || 'not-started',
+          previousConfirmedPose: quality.sequence.previousConfirmedPose || null,
+          lastConfirmedPose: quality.sequence.lastConfirmedPose || null,
+          expectedNextPoses: Array.isArray(quality.sequence.expectedNextPoses) ? [...quality.sequence.expectedNextPoses] : [],
+          transitionValidationResult: quality.sequence.transitionValidationResult || 'unknown',
+          rejectionReason: quality.sequence.rejectionReason || null,
+          trackingStatus: quality.sequence.trackingStatus || trackingStatus,
+          eventType: quality.sequence.eventType || 'unknown',
+          completedMovements: Array.isArray(quality.sequence.completedMovements) ? [...quality.sequence.completedMovements] : [],
+        } : null,
       }
       entries = [entry, ...entries].slice(0, limit)
       lastSampleAt = at

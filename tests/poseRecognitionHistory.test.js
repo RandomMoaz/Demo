@@ -56,6 +56,26 @@ describe('pose recognition history', () => {
     expect(recorder.getEntries()[0].pose).toBe('UNKNOWN')
   })
 
+  it('records sequence diagnostics without pose confidence fabrication', () => {
+    const recorder = createPoseRecognitionHistory({ now: () => 1000 })
+    const entry = recorder.record(recognized('RUKU', { confidence: 0.86 }), {
+      ...quality(), sequence: {
+        sequenceState: 'RUKU', previousConfirmedPose: 'QIYAM', lastConfirmedPose: 'RUKU',
+        expectedNextPoses: ['ITIDAL'], transitionValidationResult: 'expected-transition',
+        rejectionReason: null, trackingStatus: 'tracking', eventType: 'expected-transition',
+        completedMovements: ['QIYAM', 'RUKU'],
+      },
+    })
+    expect(entry).toMatchObject({
+      confidence: 0.86,
+      sequence: {
+        previousConfirmedPose: 'QIYAM', lastConfirmedPose: 'RUKU',
+        expectedNextPoses: ['ITIDAL'], transitionValidationResult: 'expected-transition',
+        trackingStatus: 'tracking', completedMovements: ['QIYAM', 'RUKU'],
+      },
+    })
+  })
+
   it('keeps no more than 30 entries in newest-first order', () => {
     let now = 0
     const recorder = createPoseRecognitionHistory({ now: () => now++, sampleIntervalMs: 0, changeIntervalMs: 0 })
