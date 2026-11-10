@@ -75,6 +75,70 @@ describe('rule-based prayer pose recognition', () => {
     expect(classifyPrayerPose(pose).state).toBe('UNKNOWN')
   })
 
+  it.each([
+    [11, null, 'leftShoulder'], [12, null, 'rightShoulder'],
+    [23, null, 'leftHip'], [24, null, 'rightHip'],
+    [25, 'leftKnee', 'leftKnee'], [26, 'rightKnee', 'rightKnee'],
+    [27, 'leftKnee', 'leftAnkle'], [28, 'rightKnee', 'rightAnkle'],
+  ])('rejects QIYAM with exact bilateral evidence diagnostics for missing landmark %i', (index, unavailableAngle, expectedName) => {
+    const pose = processedPose({ confidence: 0.94 })
+    pose.validLandmarkCount = 32
+    pose.joints[index] = { ...pose.joints[index], reliable: false, confidence: 0.2, reason: 'low-confidence' }
+    if (unavailableAngle) pose.jointAngles[unavailableAngle] = { value: null, confidence: 0, available: false, reason: 'unreliable-landmark' }
+
+    const result = classifyPrayerPose(pose)
+    const rejection = result.candidateRejections.find((item) => item.candidate === 'QIYAM')
+    expect(result.state).toBe('UNKNOWN')
+    expect(result.rejectionReasons).toContain('candidate-landmarks-unavailable')
+    expect(rejection.reason).toContain(`QIYAM: required landmarks unavailable or unreliable: ${expectedName} (low-confidence, confidence 20%)`)
+    expect(rejection.missingLandmarks).toContainEqual(expect.objectContaining({ index, name: expectedName, confidence: 0.2, reason: 'low-confidence' }))
+  })
+
+  it('requires both knee measurements even if every knee landmark itself is reliable', () => {
+    const pose = processedPose({ confidence: 0.94 })
+    pose.jointAngles.rightKnee = { value: null, confidence: 0, available: false, reason: 'zero-length-vector' }
+
+    const result = classifyPrayerPose(pose)
+    const rejection = result.candidateRejections.find((item) => item.candidate === 'QIYAM')
+    expect(result.state).toBe('UNKNOWN')
+    expect(rejection.unavailableMeasurements).toContainEqual({ key: 'rightKnee', reason: 'zero-length-vector', confidence: 0 })
+    expect(rejection.reason).toContain('rightKnee measurement unavailable (zero-length-vector; uses rightHip, rightKnee, rightAnkle)')
+  })
+
+  it('does not reject Jalsa because an unavailable knee angle and ankle on the opposite side are unused', () => {
+    const pose = processedPose({ seated: true, knee: 100 })
+    pose.joints[28] = { ...pose.joints[28], reliable: false, confidence: 0.2, reason: 'low-confidence' }
+    pose.jointAngles.rightKnee = { value: null, confidence: 0, available: false, reason: 'unreliable-landmark' }
+
+    const result = classifyPrayerPose(pose, { previousPose: { state: 'SUJUD' } })
+    expect(result.state).toBe('JALSA')
+    expect(result.reasons).toContain('single-side knee evidence (leftKnee)')
+    expect(result.candidateRejections.find((item) => item.candidate === 'JALSA')).toBeUndefined()
+  })
+
+  it.each([
+    ['RUKU', processedPose({ torso: 55 }), null],
+    ['ITIDAL', processedPose(), { state: 'RUKU' }],
+  ])('requires bilateral knee evidence for %s', (candidate, pose, previousPose) => {
+    pose.joints[28] = { ...pose.joints[28], reliable: false, confidence: 0.2, reason: 'low-confidence' }
+    pose.jointAngles.rightKnee = { value: null, confidence: 0, available: false, reason: 'unreliable-landmark' }
+
+    const result = classifyPrayerPose(pose, { previousPose })
+    expect(result.state).toBe('UNKNOWN')
+    expect(result.candidateRejections.find((item) => item.candidate === candidate)?.reason).toContain('rightAnkle (low-confidence, confidence 20%)')
+  })
+
+  it('allows TRANSITIONING when its two changed angle measurements do not use the missing ankle', () => {
+    const pose = processedPose({ hip: 120 })
+    pose.joints[28] = { ...pose.joints[28], reliable: false, confidence: 0.2, reason: 'low-confidence' }
+    pose.jointAngles.rightKnee = { value: null, confidence: 0, available: false, reason: 'unreliable-landmark' }
+    const previousPose = { state: 'QIYAM', angles: { leftHip: 90, leftShoulder: 70 } }
+
+    const result = classifyPrayerPose(pose, { previousPose })
+    expect(result.state).toBe('TRANSITIONING')
+    expect(result.candidateRejections.find((item) => item.candidate === 'TRANSITIONING')).toBeUndefined()
+  })
+
   it('classifies transition from substantial, multi-joint temporal change', () => {
     const prior = { state: 'QIYAM', angles: { leftHip: 170, rightHip: 170, leftKnee: 170, rightKnee: 170 } }
     const pose = processedPose({ torso: 55, hip: 120, knee: 120 })

@@ -35,6 +35,15 @@ const reliable = (point) => point?.reliable === true && finite(point.x) && finit
 const available = (item) => item?.available === true && finite(item.value) && finite(item.confidence)
 const clamp01 = (value) => Math.max(0, Math.min(1, value))
 const CRITICAL_LANDMARK_NAMES = Object.freeze({ 11: 'leftShoulder', 12: 'rightShoulder', 23: 'leftHip', 24: 'rightHip', 25: 'leftKnee', 26: 'rightKnee', 27: 'leftAnkle', 28: 'rightAnkle' })
+const CANDIDATE_LANDMARK_NAMES = Object.freeze({
+  11: 'leftShoulder', 12: 'rightShoulder', 13: 'leftElbow', 14: 'rightElbow', 15: 'leftWrist', 16: 'rightWrist',
+  23: 'leftHip', 24: 'rightHip', 25: 'leftKnee', 26: 'rightKnee', 27: 'leftAnkle', 28: 'rightAnkle',
+})
+const ANGLE_LANDMARKS = Object.freeze({
+  leftHip: [11, 23, 25], rightHip: [12, 24, 26],
+  leftKnee: [23, 25, 27], rightKnee: [24, 26, 28],
+  leftShoulder: [13, 11, 23], rightShoulder: [14, 12, 24],
+})
 
 function avgReliable(items) {
   const values = items.filter(available)
@@ -155,29 +164,72 @@ export function classifyPrayerPose(pose, { thresholds = {}, previousPose = null 
   }
 
   const candidates = []
-  const add = (state, score, reasons) => { if (score > 0) candidates.push({ state, score: clamp01(score), reasons }) }
+  const candidateRejections = []
+  const add = (state, score, reasons, requiredLandmarkIndexes = [], requiredMeasurementKeys = []) => {
+    if (!(score > 0)) return
+    const required = [...new Set(requiredLandmarkIndexes)]
+    const missing = required.flatMap((index) => {
+      const point = joint(pose, index)
+      if (reliable(point)) return []
+      return [{
+        index,
+        name: point?.name || CANDIDATE_LANDMARK_NAMES[index] || `landmark-${index}`,
+        confidence: finite(point?.confidence) ? point.confidence : null,
+        reason: point?.reason || 'missing-or-unreliable',
+      }]
+    })
+    const unavailableMeasurements = requiredMeasurementKeys.flatMap((key) => {
+      const item = measure(pose, key)
+      if (available(item)) return []
+      return [{ key, reason: item?.reason || 'unavailable', confidence: finite(item?.confidence) ? item.confidence : null }]
+    })
+    if (missing.length || unavailableMeasurements.length) {
+      const details = missing.map((point) => `${point.name} (${point.reason}${point.confidence === null ? '' : `, confidence ${Math.round(point.confidence * 100)}%`})`)
+      details.push(...unavailableMeasurements.map((item) => {
+        const sourceNames = (ANGLE_LANDMARKS[item.key] || []).map((index) => joint(pose, index)?.name || CANDIDATE_LANDMARK_NAMES[index] || `landmark-${index}`)
+        return `${item.key} measurement unavailable (${item.reason}; uses ${sourceNames.join(', ')})`
+      }))
+      candidateRejections.push({
+        candidate: state,
+        missingLandmarks: missing,
+        unavailableMeasurements,
+        reason: `${state}: required landmarks unavailable or unreliable: ${details.join(', ')}`,
+      })
+      return
+    }
+    candidates.push({ state, score: clamp01(score), reasons })
+  }
   const torsoAbs = available(torso) ? Math.abs(torso.value) : null
-  const armsRaised = [[15, 11], [16, 12]].some(([wristIndex, shoulderIndex]) => {
+  const raisedArm = [[15, 11], [16, 12]].find(([wristIndex, shoulderIndex]) => {
     const wrist = joint(pose, wristIndex), shoulder = joint(pose, shoulderIndex)
     return reliable(wrist) && reliable(shoulder) && wrist.y < shoulder.y - config.armRaisedHeightOffset
   })
+  const armsRaised = Boolean(raisedArm)
+  const torsoLandmarks = [11, 12, 23, 24]
+  const bilateralKneeLandmarks = [...ANGLE_LANDMARKS.leftKnee, ...ANGLE_LANDMARKS.rightKnee]
+  const standingLandmarks = [...torsoLandmarks, ...bilateralKneeLandmarks]
+  const verticalOrderLandmarks = [
+    ...[11, 12].filter((index) => reliable(joint(pose, index))),
+    ...[23, 24].filter((index) => reliable(joint(pose, index))),
+    ...[25, 26].filter((index) => reliable(joint(pose, index))),
+  ]
 
   if (torsoAbs !== null && torsoAbs <= config.uprightTorsoDegrees && knees && knees.value >= config.standingKneeDegrees) {
-    if (armsRaised) add('SALAM', Math.min(0.94, confidence * 0.92), ['upright-torso', 'raised-arm-geometry'])
-    else if (previousPose?.state === 'RUKU') add('ITIDAL', confidence * 0.9, ['upright-after-stable-ruku'])
-    else add('QIYAM', confidence * 0.9, ['upright-torso', 'extended-knees'])
+    if (armsRaised) add('SALAM', Math.min(0.94, confidence * 0.92), ['upright-torso', 'raised-arm-geometry'], [...standingLandmarks, raisedArm[0]], ['leftKnee', 'rightKnee'])
+    else if (previousPose?.state === 'RUKU') add('ITIDAL', confidence * 0.9, ['upright-after-stable-ruku'], standingLandmarks, ['leftKnee', 'rightKnee'])
+    else add('QIYAM', confidence * 0.9, ['upright-torso', 'extended-knees'], standingLandmarks, ['leftKnee', 'rightKnee'])
   }
 
   if (torsoAbs !== null && torsoAbs >= config.bowTorsoDegrees && knees && knees.value >= config.standingKneeDegrees &&
       order && personHeight && (order.hips - order.shoulders) / personHeight >= config.bowVerticalRatio) {
-    add('RUKU', confidence * 0.88, ['inclined-torso', 'extended-knees'])
+    add('RUKU', confidence * 0.88, ['inclined-torso', 'extended-knees'], [...standingLandmarks, ...verticalOrderLandmarks], ['leftKnee', 'rightKnee'])
   }
 
   const lowTorso = torsoAbs !== null && torsoAbs >= config.prostrationTorsoDegrees
   const shoulderHipLevel = order && personHeight && Math.abs(order.shoulders - order.hips) / personHeight <= config.prostrateAlignmentRatio
   if (lowTorso && shoulderHipLevel && knees && knees.value >= config.standingKneeDegrees) {
     const state = previousPose?.state === 'JALSA' || previousPose?.state === 'SECOND_SUJUD' ? 'SECOND_SUJUD' : 'SUJUD'
-    add(state, confidence * 0.84, ['low-torso-inclination', 'shoulders-near-hip-height', 'extended-knees'])
+    add(state, confidence * 0.84, ['low-torso-inclination', 'shoulders-near-hip-height', 'extended-knees'], [...standingLandmarks, ...verticalOrderLandmarks], ['leftKnee', 'rightKnee'])
   }
 
   // Sitting requires bent knees and hips visibly lower than shoulders. These
@@ -186,33 +238,47 @@ export function classifyPrayerPose(pose, { thresholds = {}, previousPose = null 
   if (seatedOrder && knees && knees.value <= config.seatedKneeDegrees) {
     const state = previousPose?.state === 'JALSA' || previousPose?.state === 'SECOND_SUJUD' || previousPose?.state === 'SUJUD'
       ? 'JALSA' : previousPose?.state === 'TASHAHHUD' ? 'TASHAHHUD' : null
-    if (state) add(state, confidence * 0.78, ['bent-knees', 'seated-vertical-order', 'short-term-posture-context'])
+    if (state) {
+      const usedKneeAngles = ['leftKnee', 'rightKnee'].filter((key) => available(measure(pose, key)))
+      const kneeLandmarks = usedKneeAngles.flatMap((key) => ANGLE_LANDMARKS[key])
+      const kneeEvidence = usedKneeAngles.length === 1 ? [`single-side knee evidence (${usedKneeAngles[0]})`] : []
+      add(state, confidence * 0.78, ['bent-knees', 'seated-vertical-order', 'short-term-posture-context', ...kneeEvidence], [...verticalOrderLandmarks, ...kneeLandmarks])
+    }
   }
 
   const angleKeys = ['leftHip', 'rightHip', 'leftKnee', 'rightKnee', 'leftShoulder', 'rightShoulder']
   const angleValues = angleKeys.map((key) => measure(pose, key)).filter(available)
   const priorAngles = previousPose?.angles
   if (priorAngles && angleValues.length >= 2) {
-    const current = angleValues.map((item) => item.value)
     const deltas = angleKeys.map((key) => {
       const currentValue = measure(pose, key)
       return available(currentValue) && finite(priorAngles[key]) ? Math.abs(currentValue.value - priorAngles[key]) : null
-    }).filter(finite)
-    if (deltas.length >= 2 && deltas.filter((delta) => delta >= config.transitionAngleDeltaDegrees).length >= 2) {
-      add('TRANSITIONING', Math.min(0.82, confidence * 0.76), ['large-short-term-joint-angle-change'])
+    })
+    const finiteDeltas = deltas.filter(finite)
+    if (finiteDeltas.length >= 2 && finiteDeltas.filter((delta) => delta >= config.transitionAngleDeltaDegrees).length >= 2) {
+      const changedKeys = angleKeys.filter((key, index) => finite(deltas[index]) && deltas[index] >= config.transitionAngleDeltaDegrees)
+      const usedLandmarks = changedKeys.flatMap((key) => ANGLE_LANDMARKS[key] || [])
+      add('TRANSITIONING', Math.min(0.82, confidence * 0.76), ['large-short-term-joint-angle-change'], usedLandmarks)
     }
   }
 
   candidates.sort((a, b) => b.score - a.score)
   if (!candidates.length) {
-    const rejectionReasons = ['no-rule-matched', ...diagnostics.ruleRejections]
-    return { ...base, ...diagnostics, confidence, rejectionReasons, diagnosticReason: rejectionReasons.join('; '), reasons: ['no-rule-matched'] }
+    const candidateReasons = candidateRejections.map((item) => item.reason)
+    const rejectionReasons = candidateReasons.length
+      ? ['candidate-landmarks-unavailable', ...candidateReasons]
+      : ['no-rule-matched', ...diagnostics.ruleRejections]
+    return {
+      ...base, ...diagnostics, confidence, candidateRejections, rejectionReasons,
+      diagnosticReason: rejectionReasons.slice(1).join('; ') || rejectionReasons[0],
+      reasons: [candidateReasons.length ? 'candidate-landmarks-unavailable' : 'no-rule-matched'],
+    }
   }
   if (candidates.length > 1 && candidates[0].score - candidates[1].score < config.candidateMargin) {
-    return { ...base, ...diagnostics, confidence, status: 'ambiguous', candidates: candidates.slice(0, 3), diagnosticReason: 'Overlapping geometric rules have similar scores', rejectionReasons: ['overlapping-geometric-rules'], reasons: ['overlapping-geometric-rules'] }
+    return { ...base, ...diagnostics, confidence, candidateRejections, status: 'ambiguous', candidates: candidates.slice(0, 3), diagnosticReason: 'Overlapping geometric rules have similar scores', rejectionReasons: ['overlapping-geometric-rules'], reasons: ['overlapping-geometric-rules'] }
   }
   const best = candidates[0]
-  return { ...diagnostics, state: best.state, confidence: best.score, postureConfidence: best.score, status: 'candidate', candidates: candidates.slice(0, 3), diagnosticReason: `Candidate ${best.state}: ${best.reasons.join(', ')}`, rejectionReasons: [], reasons: best.reasons }
+  return { ...diagnostics, candidateRejections, state: best.state, confidence: best.score, postureConfidence: best.score, status: 'candidate', candidates: candidates.slice(0, 3), diagnosticReason: `Candidate ${best.state}: ${best.reasons.join(', ')}`, rejectionReasons: [], reasons: best.reasons }
 }
 
 /** Stateful hysteresis wrapper; tracking interruptions clear all posture history. */
