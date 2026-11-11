@@ -7,6 +7,9 @@ import IngredientOCR from '../components/IngredientOCR'
 import { OCR_BLOCK, OCR_TRUST } from '../lib/ocrPrep'
 import { createPrayerCameraController } from '../lib/prayerCamera'
 import { createPoseTracker, drawPoseSkeleton, summarizePoseResult } from '../lib/poseTracker'
+import { createPoseLandmarkProcessor, drawJointAngleLabels } from '../lib/poseLandmarks'
+import { createPrayerPoseRecognizer } from '../lib/poseRecognition'
+import { createPoseRecognitionHistory } from '../lib/poseRecognitionHistory'
 
 const Back = ({ onClick }) => (
   <button className="back-ic" onClick={onClick} aria-label="back">
@@ -236,10 +239,23 @@ export function Salah() {
   const [cameraState, setCameraState] = useState('idle')
   const [poseStatus, setPoseStatus] = useState('idle')
   const [poseSummary, setPoseSummary] = useState(null)
+  const [poseError, setPoseError] = useState('')
+  const [diagnostics, setDiagnostics] = useState([])
+  const [poseHistory, setPoseHistory] = useState([])
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const cameraRef = useRef(null)
   const trackerRef = useRef(null)
+  const diagnosticsRef = useRef([])
+  const landmarkProcessorRef = useRef(null)
+  const processedPoseRef = useRef(null)
+  const poseRecognizerRef = useRef(null)
+  const recognizedPoseRef = useRef(null)
+  const poseHistoryRecorderRef = useRef(null)
+  if (!poseHistoryRecorderRef.current) poseHistoryRecorderRef.current = createPoseRecognitionHistory({ limit: 30 })
+  const showAngleOverlayRef = useRef(false)
+  const [showAngleOverlay, setShowAngleOverlay] = useState(false)
+  const hadTrackedPersonRef = useRef(false)
   const ar = lang === 'ar'
   const text = {
     idle: ar ? 'تُستخدم الكاميرا لعرضك أثناء التدريب. لا يتم حفظ الفيديو أو رفعه.' : 'The camera shows you during practice. Video is not saved or uploaded.',
@@ -268,42 +284,131 @@ export function Salah() {
     if (cameraState !== 'active' || !videoRef.current) {
       trackerRef.current?.stop()
       trackerRef.current = null
+      landmarkProcessorRef.current?.reset()
+      landmarkProcessorRef.current = null
+      processedPoseRef.current = null
+      poseRecognizerRef.current?.reset()
+      poseRecognizerRef.current = null
+      recognizedPoseRef.current = null
       setPoseStatus('idle')
       setPoseSummary(null)
+      setPoseError('')
+      diagnosticsRef.current = []
+      setDiagnostics([])
+      hadTrackedPersonRef.current = false
       const ctx = canvasRef.current?.getContext?.('2d')
       if (ctx && canvasRef.current) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
       return
     }
+    landmarkProcessorRef.current = createPoseLandmarkProcessor({ minConfidence: 0.5, smoothingFactor: 0.55 })
+    poseRecognizerRef.current = createPrayerPoseRecognizer({ stableFrames: 3 })
     const tracker = createPoseTracker(videoRef.current, {
-      onStatus: setPoseStatus,
+      onStatus: (status, detail) => {
+        setPoseStatus(status)
+        setPoseError(status === 'error' ? detail || 'The pose worker reported an unspecified error' : '')
+      },
+      onDiagnostic: (event) => {
+        diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), event]
+      },
       onResult: (result) => {
+        const processingStartedAt = performance.now()
         const summary = summarizePoseResult(result.poses)
+        const processed = landmarkProcessorRef.current?.process(summary.landmarks, {
+          timestamp: result.timestamp ?? performance.now(),
+          width: result.width || videoRef.current?.videoWidth || 1,
+          height: result.height || videoRef.current?.videoHeight || 1,
+          trackingStatus: summary.status,
+        })
+        processedPoseRef.current = processed || null
+        const recognized = poseRecognizerRef.current?.process(processed || { trackingStatus: 'no-pose' }) || null
+        recognizedPoseRef.current = recognized
+        if (recognized) {
+          const recorded = poseHistoryRecorderRef.current.record(recognized, {
+            trackingStatus: processed?.trackingStatus || summary.status,
+            landmarkCount: processed?.landmarkCount ?? summary.landmarks?.length,
+            validLandmarkCount: processed?.validLandmarkCount,
+            confidence: processed?.confidence,
+          })
+          if (recorded) setPoseHistory(poseHistoryRecorderRef.current.getEntries())
+        }
         setPoseSummary(summary)
-        setPoseStatus(summary.status)
+        if (summary.status === 'tracking') {
+          hadTrackedPersonRef.current = true
+          setPoseStatus('tracking')
+        } else if (summary.status === 'partial') {
+          hadTrackedPersonRef.current = true
+          setPoseStatus('partial')
+        } else if (summary.status === 'multiple') {
+          setPoseStatus('multiple')
+        } else {
+          setPoseStatus(hadTrackedPersonRef.current ? 'tracking-lost' : 'waiting-person')
+        }
         const canvas = canvasRef.current
         if (canvas && result.width && result.height) {
-          if (canvas.width !== result.width) canvas.width = result.width
-          if (canvas.height !== result.height) canvas.height = result.height
-          // The canvas element is mirrored by the same CSS transform as the video.
+          const dpr = Math.max(1, window.devicePixelRatio || 1)
+          const backingWidth = Math.round(result.width * dpr)
+          const backingHeight = Math.round(result.height * dpr)
+          if (canvas.width !== backingWidth) canvas.width = backingWidth
+          if (canvas.height !== backingHeight) canvas.height = backingHeight
+          // Video and canvas share object-fit and mirror transforms. Draw source coordinates
+          // without a second mirror; CSS mirrors both once for the user-facing preview.
           drawPoseSkeleton(canvas, summary.landmarks, { mirrored: false })
+          if (import.meta.env.DEV && showAngleOverlayRef.current && processed) drawJointAngleLabels(canvas, processed)
+          const videoRect = videoRef.current?.getBoundingClientRect?.()
+          const canvasRect = canvas.getBoundingClientRect?.()
+          diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), {
+            stage: 'canvas-render', message: 'Rendered returned landmarks on the camera canvas',
+            at: new Date().toISOString(), details: {
+              sourceWidth: result.width, sourceHeight: result.height,
+              canvasBackingWidth: canvas.width, canvasBackingHeight: canvas.height, devicePixelRatio: dpr,
+              videoIntrinsicWidth: videoRef.current?.videoWidth, videoIntrinsicHeight: videoRef.current?.videoHeight,
+              videoClientWidth: videoRect?.width, videoClientHeight: videoRect?.height,
+              canvasClientWidth: canvasRect?.width, canvasClientHeight: canvasRect?.height,
+              cssBoxDimensionsMatch: Boolean(videoRect && canvasRect && Math.abs(videoRect.width - canvasRect.width) < 1 && Math.abs(videoRect.height - canvasRect.height) < 1),
+            },
+          }]
         }
+        if (processed) diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), {
+          stage: 'landmark-processing', message: 'Validated landmarks and calculated smoothed body measurements',
+          at: new Date().toISOString(), details: {
+            timestamp: processed.timestamp, trackingStatus: processed.trackingStatus,
+            landmarkCount: processed.landmarkCount, validLandmarkCount: processed.validLandmarkCount,
+            jointAngles: Object.fromEntries(Object.entries(processed.jointAngles).map(([key, value]) => [key, { degrees: value.value, confidence: value.confidence, available: value.available }])),
+            torsoInclination: { degrees: processed.torsoInclination.value, confidence: processed.torsoInclination.confidence, available: processed.torsoInclination.available },
+            confidence: processed.confidence, qualityWarnings: processed.qualityWarnings,
+            smoothing: processed.smoothing, processingDurationMs: Math.max(processed.processingDurationMs, performance.now() - processingStartedAt),
+          },
+        }]
+        if (recognized) diagnosticsRef.current = [...diagnosticsRef.current.slice(-39), {
+          stage: 'pose-recognition', message: 'Rule-based visual posture assessment',
+          at: new Date().toISOString(), details: recognized,
+        }]
       },
     })
     trackerRef.current = tracker
+    const diagnosticsTimer = setInterval(() => setDiagnostics([...diagnosticsRef.current]), 500)
     return () => {
+      if (diagnosticsTimer) clearInterval(diagnosticsTimer)
       tracker.stop()
       if (trackerRef.current === tracker) trackerRef.current = null
     }
   }, [cameraState])
 
   const trackingText = {
-    idle: '', loading: ar ? 'جارٍ تحميل تتبّع الجسم على جهازك…' : 'Loading on-device pose tracking…',
-    searching: ar ? 'ضَع جسمك داخل الإطار لبدء التتبّع.' : 'Move into the frame to begin tracking.',
-    tracking: ar ? 'تم رصد الجسم' : 'Body detected',
-    partial: ar ? 'الجسم ظاهر جزئيًا — أظهر جسمك كاملًا.' : 'Body partly visible — show your full body.',
-    'no-pose': ar ? 'لم يتم رصد جسم. حسّن الإضاءة وأظهر جسمك كاملًا.' : 'No body detected. Improve lighting and show your full body.',
+    idle: '',
+    initializing: ar ? 'جارٍ تهيئة الكاميرا والتتبّع…' : 'Initializing camera tracking…',
+    'loading-model': ar ? 'جارٍ تحميل نموذج تتبّع الجسم…' : 'Loading Pose Landmarker model…',
+    'waiting-person': ar ? 'بانتظار ظهور شخص داخل الإطار.' : 'Waiting for a person to enter the frame.',
+    tracking: ar ? 'يجري تتبّع الجسم' : 'Tracking body',
+    partial: ar ? 'التتبّع جزئي — أظهر جسمك كاملًا.' : 'Tracking partial body — show your full body.',
+    'tracking-lost': ar ? 'فُقد التتبّع. عد إلى منتصف الإطار.' : 'Tracking lost. Move back into the frame.',
     multiple: ar ? 'يظهر أكثر من شخص. استخدم الكاميرا لشخص واحد فقط.' : 'More than one person detected. Please track one person at a time.',
-    error: ar ? 'تعذّر تحميل تتبّع الجسم. أوقف الكاميرا وحاول مجددًا.' : 'Pose tracking could not start. Stop the camera and try again.',
+    error: ar ? 'حدث خطأ في تتبّع الجسم.' : 'Pose tracking error.',
+  }
+  const latestProcessedPose = processedPoseRef.current
+  const formatAngle = (name) => {
+    const value = latestProcessedPose?.jointAngles?.[name]
+    return value?.available ? `${value.value.toFixed(1)}° · ${Math.round(value.confidence * 100)}%` : 'Unavailable'
   }
 
   return (
@@ -320,9 +425,75 @@ export function Salah() {
           {cameraState !== 'active' && <div style={{ position: 'relative', textAlign: 'center', padding: 26, color: 'var(--muted)' }}><p style={{ fontSize: 12.5, lineHeight: 1.6, maxWidth: '30ch' }}>{cameraState === 'idle' ? t.poseHint : text[cameraState]}</p></div>}
         </div>
         <p role="status" aria-live="polite" style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)' }}>{text[cameraState] || text.error}</p>
-        {cameraState === 'active' && <p aria-live="polite" style={{ marginTop: 4, fontSize: 12, color: poseStatus === 'tracking' ? 'var(--accent)' : 'var(--muted)' }}>
-          {trackingText[poseStatus] || trackingText.searching}{poseSummary && poseSummary.visible > 0 && poseStatus !== 'multiple' && ` · ${ar ? 'الثقة' : 'Confidence'} ${Math.round(poseSummary.confidence * 100)}% · ${poseSummary.visible}/33`}
-        </p>}
+        {cameraState === 'active' && <div aria-live="polite" style={{ marginTop: 4, fontSize: 12, color: poseStatus === 'tracking' ? 'var(--accent)' : 'var(--muted)' }}>
+          <p style={{ margin: 0 }}>{trackingText[poseStatus] || trackingText.initializing}{poseSummary && poseSummary.visible > 0 && poseStatus !== 'multiple' && ` · ${ar ? 'الثقة' : 'Confidence'} ${Math.round(poseSummary.confidence * 100)}% · ${poseSummary.visible}/33`}</p>
+          {poseStatus === 'error' && <p style={{ margin: '4px 0 0', color: 'var(--coral)', overflowWrap: 'anywhere' }}>{poseError}</p>}
+        </div>}
+        {(cameraState === 'active' || diagnostics.length > 0 || poseHistory.length > 0) && <details style={{ marginTop: 10, fontSize: 11, color: 'var(--muted)' }}>
+          <summary>Pose diagnostics ({diagnostics.length})</summary>
+          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 10px', overflowWrap: 'anywhere' }}>
+            <dt>Worker</dt><dd>{diagnostics.some((event) => event.stage === 'worker-ready') ? 'Ready' : diagnostics.some((event) => event.stage === 'worker-start') ? 'Starting / initializing' : 'Not started'}</dd>
+            <dt>WASM</dt><dd>{diagnostics.some((event) => ['wasm-ready', 'cpu-wasm-ready'].includes(event.stage)) ? 'Loaded' : diagnostics.some((event) => event.stage === 'wasm-loading') ? 'Loading' : 'Not confirmed'}</dd>
+            <dt>Model</dt><dd>{diagnostics.some((event) => event.stage === 'worker-ready') ? 'Ready' : diagnostics.some((event) => event.stage === 'model-ready') ? 'Loaded; delegate initialization pending' : 'Not confirmed'}</dd>
+            <dt>Delegate</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'worker-ready')?.details?.delegate || 'Pending'}</dd>
+            <dt>Last sent frame</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'frame-transfer')?.details?.id ?? 'None'}</dd>
+            <dt>Last worker-received frame</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'frame-received')?.details?.id ?? 'None'}</dd>
+            <dt>Last completed frame</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'landmarks-received')?.details?.id ?? 'None'}</dd>
+            <dt>Inference duration</dt><dd>{[...diagnostics].reverse().find((event) => ['inference-complete', 'landmarks-received'].includes(event.stage))?.details?.durationMs != null ? `${[...diagnostics].reverse().find((event) => ['inference-complete', 'landmarks-received'].includes(event.stage)).details.durationMs} ms` : 'None'}</dd>
+            <dt>Landmark count</dt><dd>{[...diagnostics].reverse().find((event) => event.stage === 'landmarks-received')?.details?.landmarkCounts?.join(', ') ?? 'None'}</dd>
+            <dt>Last error</dt><dd>{[...diagnostics].reverse().find((event) => event.details?.fatal || /error|failure|timeout/i.test(event.stage))?.stage || 'None'}</dd>
+          </dl>
+          <h4 style={{ margin: '10px 0 4px' }}>Landmark processing</h4>
+          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 10px', overflowWrap: 'anywhere' }}>
+            <dt>Recognized posture</dt><dd>{recognizedPoseRef.current?.state || 'UNKNOWN'}{recognizedPoseRef.current?.stable ? ' · stable' : ' · confirming'}</dd>
+            <dt>Posture confidence</dt><dd>{recognizedPoseRef.current ? `${Math.round(recognizedPoseRef.current.confidence * 100)}% · ${recognizedPoseRef.current.status}` : 'Unavailable'}</dd>
+            <dt>Rule evidence</dt><dd>{recognizedPoseRef.current?.reasons?.join(', ') || 'Insufficient evidence'}</dd>
+          </dl>
+          <details style={{ margin: '10px 0', borderTop: '1px solid var(--line)', paddingTop: 8 }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Pose Recognition History ({poseHistory.length}/30)</summary>
+            <p style={{ margin: '7px 0', lineHeight: 1.45 }}>Recent recognition summaries only. No camera images or video are stored.</p>
+            <button type="button" onClick={() => { poseHistoryRecorderRef.current.clear(); setPoseHistory([]) }} disabled={poseHistory.length === 0} style={{ minHeight: 36, marginBottom: 8 }}>
+              Clear History
+            </button>
+            {poseHistory.length === 0 ? <p style={{ margin: '5px 0' }}>No results recorded yet.</p> :
+              <ol aria-label="Recent pose recognition results" style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 280, overflowY: 'auto', display: 'grid', gap: 7 }}>
+                {poseHistory.map((entry, index) => <li key={`${entry.timestamp}-${index}`} style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '8px 10px', lineHeight: 1.45, overflowWrap: 'anywhere' }}>
+                  <time dateTime={entry.timestamp} style={{ display: 'block', fontSize: 10.5 }}>{new Date(entry.timestamp).toLocaleString(ar ? 'ar' : 'en', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })}</time>
+                  <div><strong>Candidate:</strong> {entry.candidatePose} · <strong>Confirmed:</strong> {entry.confirmedPose}</div>
+                  <div>{entry.candidatePose !== 'UNKNOWN' ? `${Math.round(entry.confidence * 100)}% candidate score` : 'No pose score'}{entry.decisionConfidence !== null ? ` · ${Math.round(entry.decisionConfidence * 100)}% input confidence` : ''} · {entry.status}{entry.stable ? ` · stable for ${entry.pendingFrames}+ frames (required ${entry.stableFramesRequired ?? '—'})` : entry.pendingFrames !== null ? ` · pending ${entry.pendingFrames}/${entry.stableFramesRequired ?? '—'} frames` : ''}</div>
+                  <div>Reason: {entry.recognitionReason}</div>
+                  {entry.evidence.length > 0 && <div>Candidate evidence: {entry.evidence.join(', ')}</div>}
+                  {entry.rejectionReasons.length > 0 && <div>Rejected: {entry.rejectionReasons.join('; ')}</div>}
+                  {entry.measurements && <div style={{ marginTop: 3 }}>
+                    Torso: {entry.measurements.torsoInclination.available ? `${entry.measurements.torsoInclination.degrees.toFixed(1)}°` : 'unavailable'} ({entry.measurements.torsoInclination.confidence !== null ? `${Math.round(entry.measurements.torsoInclination.confidence * 100)}%` : 'no confidence'}) · Left knee: {entry.measurements.leftKnee.available ? `${entry.measurements.leftKnee.degrees.toFixed(1)}°` : 'unavailable'} ({entry.measurements.leftKnee.confidence !== null ? `${Math.round(entry.measurements.leftKnee.confidence * 100)}%` : 'no confidence'}) · Right knee: {entry.measurements.rightKnee.available ? `${entry.measurements.rightKnee.degrees.toFixed(1)}°` : 'unavailable'} ({entry.measurements.rightKnee.confidence !== null ? `${Math.round(entry.measurements.rightKnee.confidence * 100)}%` : 'no confidence'})
+                  </div>}
+                  {entry.criticalLandmarks.some((point) => !point.reliable) && <div>Critical landmarks unavailable: {entry.criticalLandmarks.filter((point) => !point.reliable).map((point) => `${point.name} (${point.reason})`).join(', ')}</div>}
+                  <div>Tracking: {entry.trackingStatus} · valid landmarks {entry.validLandmarkCount ?? '—'}/{entry.landmarkCount ?? '—'}{entry.trackingConfidence !== null ? ` · ${Math.round(entry.trackingConfidence * 100)}%` : ''}{entry.timeSincePreviousMs !== null ? ` · ${entry.timeSincePreviousMs >= 0 ? '+' : ''}${entry.timeSincePreviousMs}ms since previous result` : ''}</div>
+                </li>)}
+              </ol>}
+          </details>
+          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 10px', overflowWrap: 'anywhere' }}>
+            <dt>Detected / valid landmarks</dt><dd>{latestProcessedPose ? `${latestProcessedPose.landmarkCount} / ${latestProcessedPose.validLandmarkCount}` : 'None'}</dd>
+            <dt>Landmark confidence</dt><dd>{latestProcessedPose ? `${Math.round(latestProcessedPose.confidence * 100)}%` : 'None'}</dd>
+            <dt>Left / right elbow</dt><dd>{formatAngle('leftElbow')} / {formatAngle('rightElbow')}</dd>
+            <dt>Left / right shoulder</dt><dd>{formatAngle('leftShoulder')} / {formatAngle('rightShoulder')}</dd>
+            <dt>Left / right hip</dt><dd>{formatAngle('leftHip')} / {formatAngle('rightHip')}</dd>
+            <dt>Left / right knee</dt><dd>{formatAngle('leftKnee')} / {formatAngle('rightKnee')}</dd>
+            <dt>Torso inclination</dt><dd>{latestProcessedPose?.torsoInclination?.available ? `${latestProcessedPose.torsoInclination.value.toFixed(1)}° · ${Math.round(latestProcessedPose.torsoInclination.confidence * 100)}%` : 'Unavailable'}</dd>
+            <dt>Landmark quality</dt><dd>{latestProcessedPose?.qualityWarnings?.length ? latestProcessedPose.qualityWarnings.join(', ') : latestProcessedPose ? 'No quality warnings' : 'None'}</dd>
+            <dt>Smoothing</dt><dd>{latestProcessedPose?.smoothing ? `${latestProcessedPose.smoothing.enabled ? 'On' : 'Off'} · factor ${latestProcessedPose.smoothing.factor.toFixed(2)} · ${latestProcessedPose.smoothing.landmarksApplied} joints / ${latestProcessedPose.smoothing.anglesApplied} angles` : 'Not started'}</dd>
+            <dt>Processing duration</dt><dd>{latestProcessedPose ? `${latestProcessedPose.processingDurationMs.toFixed(2)} ms` : 'None'}</dd>
+          </dl>
+          {import.meta.env.DEV && <label style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '8px 0' }}>
+            <input type="checkbox" checked={showAngleOverlay} onChange={(event) => { showAngleOverlayRef.current = event.target.checked; setShowAngleOverlay(event.target.checked) }} />
+            Show joint angle overlay (development)
+          </label>}
+          <ol style={{ maxHeight: 180, overflowY: 'auto', paddingLeft: 24 }}>
+            {diagnostics.map((event, index) => <li key={`${event.at}-${event.stage}-${index}`} style={{ margin: '5px 0', overflowWrap: 'anywhere' }}>
+              <strong>{event.stage}</strong> <time>{event.at}</time> — {event.message} {Object.keys(event.details || {}).length > 0 && <code>{JSON.stringify(event.details)}</code>}
+            </li>)}
+          </ol>
+        </details>}
         <button className="btn block" disabled={cameraState === 'starting'} onClick={cameraState === 'active' ? stop : start}>{cameraState === 'active' ? (ar ? 'إيقاف الكاميرا' : 'Stop camera') : cameraState === 'starting' ? text.starting : t.poseStart}</button>
         <p style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.6, marginTop: 14 }}>{t.salahNote}</p>
       </div>
