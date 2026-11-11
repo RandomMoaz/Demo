@@ -78,6 +78,11 @@ export function notifyStreakAtRisk(streak, lang = 'en') {
   )
 }
 
+/** an alarm is ringing — matters when the app is in a background tab */
+export function notifyAlarm(title, body) {
+  show(title, body, 'alarm')
+}
+
 /** an Islamic event has arrived */
 export function notifyEvent(name, thawab, tag) {
   show(name, thawab, tag || 'event')

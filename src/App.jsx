@@ -11,6 +11,7 @@ import { Mushaf, Tasbih } from './screens/Quran'
 import Journey from './screens/Journey'
 import Settings from './screens/Settings'
 import Events, { EventReminder } from './screens/Events'
+import AlarmRinger from './components/AlarmRinger'
 
 export default function App() {
   const { screen, theme, dir, payload, lang } = useApp()
@@ -59,6 +60,7 @@ export default function App() {
       {screen !== 'splash' && <StatusBar />}
       {render()}
       <EventReminder />
+      <AlarmRinger />
     </div>
   )
 }

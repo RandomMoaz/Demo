@@ -762,3 +762,86 @@ label.btn.disabled{ opacity:.55; pointer-events:none; }
 .ocr-langs{ display:flex; gap:6px; margin-bottom:10px; }
 .ocr-langs button{ flex:1; min-height:34px; border-radius:10px; border:1px solid rgba(128,128,128,.35); background:transparent; color:inherit; font:inherit; font-size:12px; }
 .ocr-langs button.on{ border-color:var(--accent, #2e8b6a); color:var(--accent, #2e8b6a); font-weight:600; }
+
+/* ---------------- prayer alarm ---------------- */
+.p-fajr{ --pc:#9A7420; } .p-dhuhr{ --pc:#B0651A; } .p-asr{ --pc:#B4492F; }
+.p-maghrib{ --pc:#7E3F95; } .p-isha{ --pc:#2A62A6; } .p-custom{ --pc:var(--muted); }
+[data-theme="night"] .p-fajr{ --pc:#FFE082; } [data-theme="night"] .p-dhuhr{ --pc:#FFB74D; }
+[data-theme="night"] .p-asr{ --pc:#FF8A65; } [data-theme="night"] .p-maghrib{ --pc:#CE93D8; }
+[data-theme="night"] .p-isha{ --pc:#64B5F6; }
+
+.alm{ display:flex; flex-direction:column; gap:14px; }
+.alm-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:16px; }
+.alm-clock{ text-align:center; padding:6px 0 2px; }
+.alm-now{ font-size:40px; font-weight:700; color:var(--pc); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+.alm-date{ font-size:13px; color:var(--muted); margin-top:2px; }
+.alm-loc{ font-size:11.5px; color:var(--muted); margin-top:6px; display:flex; flex-wrap:wrap; gap:4px 10px; justify-content:center; align-items:center; }
+.alm-link{ background:none; border:0; padding:4px 0; font:inherit; font-weight:600; color:var(--accent); cursor:pointer; text-decoration:underline; }
+.alm-label{ font-size:12px; font-weight:700; color:var(--muted); margin:14px 0 8px; }
+.alm-label:first-child{ margin-top:0; }
+
+.alm-prayers{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+.alm-prayer{ display:flex; flex-direction:column; align-items:center; gap:2px; min-height:56px; padding:8px 4px; cursor:pointer;
+  background:var(--bg); border:1.5px solid var(--line); border-radius:var(--r-sm); color:var(--ink); font-family:inherit; }
+.alm-prayer b{ font-size:13.5px; }
+.alm-prayer span{ font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.alm-prayer.on{ border-color:var(--pc); background:color-mix(in srgb, var(--pc) 12%, var(--surface)); }
+.alm-prayer.on b{ color:var(--pc); }
+.alm-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; font-size:13px; font-weight:600; }
+.alm-time{ width:auto; flex:0 1 160px; }
+
+.alm-seg{ display:flex; gap:4px; padding:4px; background:var(--bg); border:1px solid var(--line); border-radius:var(--r-sm); }
+.alm-seg button{ flex:1; min-height:38px; padding:6px 4px; border:0; border-radius:9px; background:none; cursor:pointer;
+  font:inherit; font-size:12.5px; font-weight:600; color:var(--muted); }
+.alm-seg button.on{ background:var(--surface); color:var(--accent); box-shadow:0 1px 3px rgba(0,0,0,.12); }
+.alm-days{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.alm-days button{ flex:1 0 auto; min-width:40px; min-height:38px; padding:6px; border-radius:10px; cursor:pointer;
+  border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; font-size:12px; font-weight:600; }
+.alm-days button.on{ background:var(--accent); border-color:var(--accent); color:var(--surface); }
+
+.alm-actions{ display:flex; gap:8px; margin-top:16px; }
+.alm-actions .btn{ flex:1; }
+.alm-msg{ margin-top:10px; font-size:12.5px; font-weight:600; color:var(--coral); text-align:center; }
+.alm-msg.ok{ color:var(--accent); }
+.alm-empty{ font-size:13px; color:var(--muted); }
+.alm-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; margin-top:8px;
+  background:var(--bg); border-radius:var(--r-sm); border-inline-start:4px solid var(--pc); }
+.alm-item-t b{ font-size:16px; font-variant-numeric:tabular-nums; }
+.alm-item-t span{ font-size:13px; font-weight:600; color:var(--pc); margin-inline-start:6px; }
+.alm-item-s{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+.alm-del{ min-height:36px; padding:6px 12px; font-size:12px; color:var(--coral); }
+.alm-note{ font-size:11.5px; color:var(--muted); line-height:1.6; text-align:center; }
+
+/* ringing screen + hadith (cover the whole app) */
+.alm-overlay{ position:absolute; inset:0; z-index:60; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px; padding:24px 18px; overflow-y:auto; background:var(--bg); }
+.alm-ring-anim{ width:140px; height:140px; flex-shrink:0; }
+.alm-ring-time{ font-size:48px; font-weight:700; color:var(--pc); font-variant-numeric:tabular-nums; animation:alm-pulse 1.2s ease-in-out infinite; }
+.alm-ring-name{ font-size:16px; font-weight:600; margin-bottom:12px; }
+@keyframes alm-pulse{ 50%{ opacity:.55; } }
+.alm-overlay .alm-card{ width:100%; max-width:340px; text-align:center; }
+.alm-instr{ font-size:14px; font-weight:600; margin-bottom:12px; }
+.alm-problem{ font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; }
+.alm-answer{ width:140px; margin:12px auto 0; display:block; text-align:center; font-size:18px; }
+.alm-sub{ font-size:12.5px; color:var(--muted); margin-bottom:6px; }
+.alm-strong{ color:var(--ink); font-weight:600; font-size:13.5px; }
+.alm-word{ display:inline-block; font-size:22px; font-weight:700; color:var(--gold); background:var(--gold-soft);
+  padding:4px 16px; border-radius:10px; margin-bottom:10px; }
+.alm-slots, .alm-bank{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; }
+.alm-slots{ margin-bottom:12px; }
+.alm-slot, .alm-tile{ min-width:42px; height:46px; padding:0 8px; border-radius:10px; font:inherit; font-size:18px; font-weight:700; cursor:pointer; }
+.alm-slot{ background:var(--bg); border:1.5px dashed var(--line); color:var(--ink); }
+.alm-slot.on{ border-style:solid; border-color:var(--accent); }
+.alm-tile{ background:var(--accent); border:0; color:var(--surface); }
+.alm-tile:disabled{ visibility:hidden; }
+.alm-picker .alm-link{ margin-top:6px; }
+.alm-grid{ display:grid; grid-template-columns:repeat(3, 64px); gap:12px; justify-content:center; margin:8px 0 14px; }
+.alm-node{ width:64px; height:64px; border-radius:50%; cursor:pointer; background:var(--bg); border:2px solid var(--line); transition:background .15s, transform .15s; }
+.alm-node.lit{ background:var(--gold); border-color:var(--gold); transform:scale(1.08); }
+.alm-node.tap{ background:var(--accent); border-color:var(--accent); }
+.alm-err{ margin-top:10px; font-size:12.5px; font-weight:600; color:var(--coral); }
+.alm-stop{ margin-top:14px; }
+.alm-hadith-h{ font-size:13px; font-weight:700; color:var(--gold); margin-bottom:12px; }
+.alm-hadith-ar{ font-family:var(--font-arabic); font-size:18px; line-height:1.9; }
+.alm-hadith-en{ font-size:14px; line-height:1.6; color:var(--ink); margin-top:10px; }
+.alm-hadith-src{ font-size:11.5px; color:var(--muted); margin:8px 0 16px; }
