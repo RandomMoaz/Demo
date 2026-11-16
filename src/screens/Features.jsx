@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { analyze, pick } from '../lib/data'
-import { Anim } from '../components/Lottie'
 import { fmtTime } from '../lib/prayerTimes'
 import { notifyStatus, askNotifyPermission } from '../lib/notify'
 import { getLocation } from '../lib/location'
@@ -335,78 +334,8 @@ export function Alarm() {
   )
 }
 
-/* ---------------- Map (Leaflet loaded on demand) ---------------- */
-export function MapScreen() {
-  const { t, go, back, loc, setLoc } = useApp()
-  const [phase, setPhase] = useState(loc ? 'map' : 'gate')
-  const [status, setStatus] = useState('')
-  const mapRef = useRef(null)
-
-  useEffect(() => { if (phase === 'map' && loc) start(loc) /* eslint-disable-next-line */ }, [phase])
-
-  function requestLoc() {
-    setStatus(t.mapLocating)
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => { const l = { lat: pos.coords.latitude, lng: pos.coords.longitude }; setLoc(l); setPhase('map') },
-        () => setStatus(t.mapDenied), { enableHighAccuracy: false, timeout: 8000 })
-    } else setStatus(t.mapDenied)
-  }
-
-  async function loadLeaflet() {
-    if (window.L) return
-    await new Promise((res) => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l); res() })
-    await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s) })
-  }
-
-  async function start(l) {
-    setStatus(t.mapSearching)
-    await loadLeaflet()
-    const L = window.L
-    if (!mapRef.current._map) {
-      const map = L.map(mapRef.current).setView([l.lat, l.lng], 14)
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map)
-      mapRef.current._map = map
-      L.circleMarker([l.lat, l.lng], { radius: 7, color: '#48B9A2', fillColor: '#48B9A2', fillOpacity: .9 }).addTo(map)
-      setTimeout(() => map.invalidateSize(), 200)
-      const q = `[out:json][timeout:20];(node["amenity"="place_of_worship"]["religion"="muslim"](around:3000,${l.lat},${l.lng});way["amenity"="place_of_worship"]["religion"="muslim"](around:3000,${l.lat},${l.lng}););out center 40;`
-      try {
-        const res = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: q })
-        const data = await res.json(); let n = 0
-        ;(data.elements || []).forEach((el) => {
-          const la = el.lat || (el.center && el.center.lat), ln = el.lon || (el.center && el.center.lon)
-          if (la == null || ln == null) return; n++
-          const nm = (el.tags && (el.tags['name:ar'] || el.tags.name)) || 'مسجد'
-          L.marker([la, ln]).addTo(map).bindPopup(`<b>${nm}</b>`)
-        })
-        setStatus(n ? t.mapFound(n) : t.mapNone)
-      } catch { setStatus(t.mapNone) }
-    }
-  }
-
-  return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }} dir={t.dir}>
-      <div className="feat-top">
-        <Back onClick={back} />
-        <div><div className="h1">{t.mapH1}</div><div className="h2">{t.mapH2}</div></div>
-        <span className="ar-tag">مساجد</span>
-      </div>
-      {phase === 'gate' ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 30, textAlign: 'center' }}>
-          <div style={{ width: 220, height: 130 }}><Anim name="mosque" /></div>
-          <h1 className="display" style={{ fontSize: 20 }}>{t.mapGate}</h1>
-          <p style={{ fontSize: 13, color: 'var(--muted)', maxWidth: '30ch', marginBottom: 10 }}>{status || t.mapGateLead}</p>
-          <button className="btn" onClick={requestLoc}>{t.mapUse}</button>
-        </div>
-      ) : (
-        <>
-          <div ref={mapRef} style={{ flex: 1, width: '100%' }} />
-          <div style={{ padding: '12px 18px', fontSize: 12.5, color: 'var(--muted)', borderTop: '1px solid var(--line)', background: 'var(--surface)' }}>{status}</div>
-        </>
-      )}
-    </div>
-  )
-}
+/* The map lives in its own file; re-exported so existing imports keep working. */
+export { default as MapScreen } from './MapScreen'
 
 /* ---------------- Salah camera (pose inference is implemented separately) ---------------- */
 export function Salah() {

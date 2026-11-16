@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { binarize, readResult, OCR_BLOCK } from '../lib/ocrPrep'
-
-// three preprocessing settings; the most reliable read wins (measured best-of beat any single setting)
-const PASSES = [{ k: 0.8, div: 60 }, { k: 0.88, div: 30 }, { k: 0.7, div: 90 }]
-const GOOD_ENOUGH = 85 // stop early when a pass is already this reliable
+import { OCR_BLOCK } from '../lib/ocrPrep'
+import { readPhotoText } from '../lib/ocrRun'
 
 const MSG = {
   en: {
@@ -24,85 +21,36 @@ const MSG = {
   },
 }
 
-/* Scale to ~2000px and return the raw pixels; each pass then thresholds its own copy. */
-async function prepare(file) {
-  const url = URL.createObjectURL(file)
-  try {
-    const img = await new Promise((res, rej) => {
-      const i = new Image()
-      i.onload = () => res(i)
-      i.onerror = rej
-      i.src = url
-    })
-    const scale = Math.min(2, 2000 / Math.max(img.width, img.height))
-    const w = Math.round(img.width * scale), h = Math.round(img.height * scale)
-    const canvas = document.createElement('canvas')
-    canvas.width = w; canvas.height = h
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })
-    ctx.drawImage(img, 0, 0, w, h)
-    return { w, h, data: ctx.getImageData(0, 0, w, h).data }
-  } finally {
-    URL.revokeObjectURL(url)
-  }
-}
-
-function pass({ w, h, data }, opt) {
-  const canvas = document.createElement('canvas')
-  canvas.width = w; canvas.height = h
-  const ctx = canvas.getContext('2d')
-  const img = new ImageData(new Uint8ClampedArray(data), w, h)
-  binarize(img.data, w, h, opt)
-  ctx.putImageData(img, 0, 0)
-  return canvas
-}
-
 export default function IngredientOCR({ lang = 'en', onResult }) {
   const m = MSG[lang] || MSG.en
   const [state, setState] = useState('idle') // idle | loading | reading | done | low | fail
   const [pct, setPct] = useState(0)
   const [conf, setConf] = useState(null)
   const [ocrLang, setOcrLang] = useState(lang === 'ar' ? 'eng+ara' : 'eng')
-  const alive = useRef(true)
-  const workerRef = useRef(null)
+  const abortRef = useRef(null)
 
-  useEffect(() => {
-    alive.current = true
-    return () => { alive.current = false; workerRef.current?.terminate().catch(() => {}) }
-  }, [])
+  // leaving the screen stops the OCR worker
+  useEffect(() => () => abortRef.current?.abort(), [])
 
   async function run(file) {
     if (!file) return
+    abortRef.current?.abort()
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
     setState('loading'); setPct(0); setConf(null)
     try {
-      const base = await prepare(file)
-      // loaded on demand so the OCR engine is not part of the main bundle
-      const { createWorker } = await import('tesseract.js')
-      let n = 0
-      const worker = await createWorker(ocrLang, 1, {
-        logger: (p) => {
-          if (alive.current && p.status === 'recognizing text') { setState('reading'); setPct(Math.round(((n + p.progress) / PASSES.length) * 100)) }
-        },
+      const best = await readPhotoText(file, {
+        langs: ocrLang, psm: '6', // one uniform block of text
+        signal: ctrl.signal,
+        onProgress: (p) => { if (!ctrl.signal.aborted) { setState('reading'); setPct(p) } },
       })
-      workerRef.current = worker
-      await worker.setParameters({ tessedit_pageseg_mode: '6' }) // one uniform block of text
-      let best = null
-      for (; n < PASSES.length; n++) {
-        const { data } = await worker.recognize(pass(base, PASSES[n]), {}, { text: true, blocks: true })
-        const lines = (data.blocks || []).flatMap((b) => b.paragraphs.flatMap((q) => q.lines.map((l) => l.words)))
-        const r = readResult(lines, data.text) // full text + mean word confidence
-        if (!best || r.conf > best.conf) best = r
-        if (best.conf >= GOOD_ENOUGH || !alive.current) break
-      }
-      await worker.terminate()
-      workerRef.current = null
-      if (!alive.current) return
+      if (ctrl.signal.aborted) return
       setConf(best.conf)
       if (!best.text) { setState('fail'); onResult({ text: '', conf: 0 }); return }
       setState(best.conf < OCR_BLOCK ? 'low' : 'done')
       onResult({ text: best.text, conf: best.conf })
     } catch {
-      workerRef.current?.terminate().catch(() => {}); workerRef.current = null
-      if (alive.current) setState('fail')
+      if (!ctrl.signal.aborted) setState('fail')
     }
   }
 
