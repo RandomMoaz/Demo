@@ -1,0 +1,53 @@
+{
+  "note": "Wudu steps for children. 'times' is how many drops the child taps (0 = just say it). 'short' is the wording for ages 4-6. Must be reviewed by a qualified teacher before release.",
+  "steps": [
+    {
+      "id": "bismillah", "pic": "🤲", "times": 0,
+      "title": { "en": "Say Bismillah", "ar": "قل بسم الله" },
+      "text": { "en": "Make the intention in your heart to do wudu, then say “Bismillah”.", "ar": "انوِ الوضوء في قلبك، ثم قل: «بسم الله»." },
+      "short": { "en": "Say “Bismillah”.", "ar": "قل: «بسم الله»." }
+    },
+    {
+      "id": "hands", "pic": "👐", "times": 3,
+      "title": { "en": "Wash your hands", "ar": "غسل اليدين" },
+      "text": { "en": "Wash both hands up to the wrists, three times. Start with the right hand.", "ar": "اغسل يديك إلى الرسغين ثلاث مرات، وابدأ باليد اليمنى." },
+      "short": { "en": "Wash your hands, three times.", "ar": "اغسل يديك ثلاث مرات." }
+    },
+    {
+      "id": "mouth", "pic": "👄", "times": 3,
+      "title": { "en": "Rinse your mouth", "ar": "المضمضة" },
+      "text": { "en": "Take water into your mouth, swish it around and spit it out, three times.", "ar": "ضع الماء في فمك وحرّكه ثم أخرجه، ثلاث مرات." },
+      "short": { "en": "Rinse your mouth, three times.", "ar": "اغسل فمك ثلاث مرات." }
+    },
+    {
+      "id": "nose", "pic": "👃", "times": 3,
+      "title": { "en": "Clean your nose", "ar": "الاستنشاق" },
+      "text": { "en": "Gently breathe a little water into your nose and blow it out, three times.", "ar": "أدخل قليلًا من الماء في أنفك برفق ثم أخرجه، ثلاث مرات." },
+      "short": { "en": "Clean your nose, three times.", "ar": "نظّف أنفك ثلاث مرات." }
+    },
+    {
+      "id": "face", "pic": "🙂", "times": 3,
+      "title": { "en": "Wash your face", "ar": "غسل الوجه" },
+      "text": { "en": "Wash your whole face, from ear to ear and from your hair to your chin, three times.", "ar": "اغسل وجهك كله من الأذن إلى الأذن ومن منبت الشعر إلى الذقن، ثلاث مرات." },
+      "short": { "en": "Wash your face, three times.", "ar": "اغسل وجهك ثلاث مرات." }
+    },
+    {
+      "id": "arms", "pic": "💪", "times": 3,
+      "title": { "en": "Wash your arms", "ar": "غسل الذراعين" },
+      "text": { "en": "Wash your right arm up to and including the elbow, three times, then your left arm.", "ar": "اغسل ذراعك اليمنى مع المرفق ثلاث مرات، ثم الذراع اليسرى." },
+      "short": { "en": "Wash your arms up to the elbows, right arm first.", "ar": "اغسل ذراعيك إلى المرفقين، وابدأ باليمنى." }
+    },
+    {
+      "id": "head", "pic": "🧒", "times": 1,
+      "title": { "en": "Wipe your head and ears", "ar": "مسح الرأس والأذنين" },
+      "text": { "en": "Wipe over your head once with wet hands, from front to back and back again, then wipe your ears.", "ar": "امسح رأسك مرة واحدة بيدين مبلّلتين من الأمام إلى الخلف ثم إلى الأمام، ثم امسح أذنيك." },
+      "short": { "en": "Wipe your head and ears, once.", "ar": "امسح رأسك وأذنيك مرة واحدة." }
+    },
+    {
+      "id": "feet", "pic": "🦶", "times": 3,
+      "title": { "en": "Wash your feet", "ar": "غسل القدمين" },
+      "text": { "en": "Wash your right foot up to and including the ankle, three times, then your left foot.", "ar": "اغسل قدمك اليمنى مع الكعبين ثلاث مرات، ثم القدم اليسرى." },
+      "short": { "en": "Wash your feet, right foot first.", "ar": "اغسل قدميك، وابدأ باليمنى." }
+    }
+  ]
+}

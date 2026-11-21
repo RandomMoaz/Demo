@@ -1,0 +1,423 @@
+{
+ "bands": {
+  "little": [
+   1,
+   112,
+   113,
+   114,
+   108
+  ],
+  "explorer": [
+   1,
+   112,
+   113,
+   114,
+   108,
+   103,
+   110,
+   106
+  ],
+  "young": [
+   1,
+   112,
+   113,
+   114,
+   108,
+   103,
+   110,
+   106,
+   105,
+   107,
+   111,
+   109
+  ]
+ },
+ "surahs": [
+  {
+   "n": 1,
+   "ar": "الفاتحة",
+   "tr": "Al-Fatihah",
+   "en": "The Opener",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ",
+     "en": "In the name of Allah, the Entirely Merciful, the Especially Merciful"
+    },
+    {
+     "n": 2,
+     "ar": "ٱلۡحَمۡدُ لِلَّهِ رَبِّ ٱلۡعَٰلَمِينَ",
+     "en": "[All] praise is [due] to Allah, Lord of the worlds"
+    },
+    {
+     "n": 3,
+     "ar": "ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ",
+     "en": "The Entirely Merciful, the Especially Merciful"
+    },
+    {
+     "n": 4,
+     "ar": "مَٰلِكِ يَوۡمِ ٱلدِّينِ",
+     "en": "Sovereign of the Day of Recompense"
+    },
+    {
+     "n": 5,
+     "ar": "إِيَّاكَ نَعۡبُدُ وَإِيَّاكَ نَسۡتَعِينُ",
+     "en": "It is You we worship and You we ask for help"
+    },
+    {
+     "n": 6,
+     "ar": "ٱهۡدِنَا ٱلصِّرَٰطَ ٱلۡمُسۡتَقِيمَ",
+     "en": "Guide us to the straight path"
+    },
+    {
+     "n": 7,
+     "ar": "صِرَٰطَ ٱلَّذِينَ أَنۡعَمۡتَ عَلَيۡهِمۡ غَيۡرِ ٱلۡمَغۡضُوبِ عَلَيۡهِمۡ وَلَا ٱلضَّآلِّينَ",
+     "en": "The path of those upon whom You have bestowed favor, not of those who have evoked [Your] anger or of those who are astray"
+    }
+   ]
+  },
+  {
+   "n": 112,
+   "ar": "الإخلاص",
+   "tr": "Al-Ikhlas",
+   "en": "The Sincerity",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "قُلۡ هُوَ ٱللَّهُ أَحَدٌ",
+     "en": "Say, \"He is Allah, [who is] One"
+    },
+    {
+     "n": 2,
+     "ar": "ٱللَّهُ ٱلصَّمَدُ",
+     "en": "Allah, the Eternal Refuge"
+    },
+    {
+     "n": 3,
+     "ar": "لَمۡ يَلِدۡ وَلَمۡ يُولَدۡ",
+     "en": "He neither begets nor is born"
+    },
+    {
+     "n": 4,
+     "ar": "وَلَمۡ يَكُن لَّهُۥ كُفُوًا أَحَدُۢ",
+     "en": "Nor is there to Him any equivalent"
+    }
+   ]
+  },
+  {
+   "n": 113,
+   "ar": "الفلق",
+   "tr": "Al-Falaq",
+   "en": "The Daybreak",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "قُلۡ أَعُوذُ بِرَبِّ ٱلۡفَلَقِ",
+     "en": "Say, \"I seek refuge in the Lord of daybreak"
+    },
+    {
+     "n": 2,
+     "ar": "مِن شَرِّ مَا خَلَقَ",
+     "en": "From the evil of that which He created"
+    },
+    {
+     "n": 3,
+     "ar": "وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ",
+     "en": "And from the evil of darkness when it settles"
+    },
+    {
+     "n": 4,
+     "ar": "وَمِن شَرِّ ٱلنَّفَّـٰثَٰتِ فِي ٱلۡعُقَدِ",
+     "en": "And from the evil of the blowers in knots"
+    },
+    {
+     "n": 5,
+     "ar": "وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ",
+     "en": "And from the evil of an envier when he envies"
+    }
+   ]
+  },
+  {
+   "n": 114,
+   "ar": "الناس",
+   "tr": "An-Nas",
+   "en": "Mankind",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "قُلۡ أَعُوذُ بِرَبِّ ٱلنَّاسِ",
+     "en": "Say, \"I seek refuge in the Lord of mankind"
+    },
+    {
+     "n": 2,
+     "ar": "مَلِكِ ٱلنَّاسِ",
+     "en": "The Sovereign of mankind"
+    },
+    {
+     "n": 3,
+     "ar": "إِلَٰهِ ٱلنَّاسِ",
+     "en": "The God of mankind"
+    },
+    {
+     "n": 4,
+     "ar": "مِن شَرِّ ٱلۡوَسۡوَاسِ ٱلۡخَنَّاسِ",
+     "en": "From the evil of the retreating whisperer"
+    },
+    {
+     "n": 5,
+     "ar": "ٱلَّذِي يُوَسۡوِسُ فِي صُدُورِ ٱلنَّاسِ",
+     "en": "Who whispers [evil] into the breasts of mankind"
+    },
+    {
+     "n": 6,
+     "ar": "مِنَ ٱلۡجِنَّةِ وَٱلنَّاسِ",
+     "en": "From among the jinn and mankind"
+    }
+   ]
+  },
+  {
+   "n": 108,
+   "ar": "الكوثر",
+   "tr": "Al-Kawthar",
+   "en": "The Abundance",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "إِنَّآ أَعۡطَيۡنَٰكَ ٱلۡكَوۡثَرَ",
+     "en": "Indeed, We have granted you, [O Muhammad], al-Kawthar"
+    },
+    {
+     "n": 2,
+     "ar": "فَصَلِّ لِرَبِّكَ وَٱنۡحَرۡ",
+     "en": "So pray to your Lord and sacrifice [to Him alone]"
+    },
+    {
+     "n": 3,
+     "ar": "إِنَّ شَانِئَكَ هُوَ ٱلۡأَبۡتَرُ",
+     "en": "Indeed, your enemy is the one cut off"
+    }
+   ]
+  },
+  {
+   "n": 103,
+   "ar": "العصر",
+   "tr": "Al-'Asr",
+   "en": "The Declining Day",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "وَٱلۡعَصۡرِ",
+     "en": "By time"
+    },
+    {
+     "n": 2,
+     "ar": "إِنَّ ٱلۡإِنسَٰنَ لَفِي خُسۡرٍ",
+     "en": "Indeed, mankind is in loss"
+    },
+    {
+     "n": 3,
+     "ar": "إِلَّا ٱلَّذِينَ ءَامَنُواْ وَعَمِلُواْ ٱلصَّـٰلِحَٰتِ وَتَوَاصَوۡاْ بِٱلۡحَقِّ وَتَوَاصَوۡاْ بِٱلصَّبۡرِ",
+     "en": "Except for those who have believed and done righteous deeds and advised each other to truth and advised each other to patience"
+    }
+   ]
+  },
+  {
+   "n": 110,
+   "ar": "النصر",
+   "tr": "An-Nasr",
+   "en": "The Divine Support",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "إِذَا جَآءَ نَصۡرُ ٱللَّهِ وَٱلۡفَتۡحُ",
+     "en": "When the victory of Allah has come and the conquest"
+    },
+    {
+     "n": 2,
+     "ar": "وَرَأَيۡتَ ٱلنَّاسَ يَدۡخُلُونَ فِي دِينِ ٱللَّهِ أَفۡوَاجٗا",
+     "en": "And you see the people entering into the religion of Allah in multitudes"
+    },
+    {
+     "n": 3,
+     "ar": "فَسَبِّحۡ بِحَمۡدِ رَبِّكَ وَٱسۡتَغۡفِرۡهُۚ إِنَّهُۥ كَانَ تَوَّابَۢا",
+     "en": "Then exalt [Him] with praise of your Lord and ask forgiveness of Him. Indeed, He is ever Accepting of repentance"
+    }
+   ]
+  },
+  {
+   "n": 106,
+   "ar": "قريش",
+   "tr": "Quraysh",
+   "en": "Quraysh",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "لِإِيلَٰفِ قُرَيۡشٍ",
+     "en": "For the accustomed security of the Quraysh"
+    },
+    {
+     "n": 2,
+     "ar": "إِۦلَٰفِهِمۡ رِحۡلَةَ ٱلشِّتَآءِ وَٱلصَّيۡفِ",
+     "en": "Their accustomed security [in] the caravan of winter and summer"
+    },
+    {
+     "n": 3,
+     "ar": "فَلۡيَعۡبُدُواْ رَبَّ هَٰذَا ٱلۡبَيۡتِ",
+     "en": "Let them worship the Lord of this House"
+    },
+    {
+     "n": 4,
+     "ar": "ٱلَّذِيٓ أَطۡعَمَهُم مِّن جُوعٖ وَءَامَنَهُم مِّنۡ خَوۡفِۭ",
+     "en": "Who has fed them, [saving them] from hunger and made them safe, [saving them] from fear"
+    }
+   ]
+  },
+  {
+   "n": 105,
+   "ar": "الفيل",
+   "tr": "Al-Fil",
+   "en": "The Elephant",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "أَلَمۡ تَرَ كَيۡفَ فَعَلَ رَبُّكَ بِأَصۡحَٰبِ ٱلۡفِيلِ",
+     "en": "Have you not considered, [O Muhammad], how your Lord dealt with the companions of the elephant"
+    },
+    {
+     "n": 2,
+     "ar": "أَلَمۡ يَجۡعَلۡ كَيۡدَهُمۡ فِي تَضۡلِيلٖ",
+     "en": "Did He not make their plan into misguidance"
+    },
+    {
+     "n": 3,
+     "ar": "وَأَرۡسَلَ عَلَيۡهِمۡ طَيۡرًا أَبَابِيلَ",
+     "en": "And He sent against them birds in flocks"
+    },
+    {
+     "n": 4,
+     "ar": "تَرۡمِيهِم بِحِجَارَةٖ مِّن سِجِّيلٖ",
+     "en": "Striking them with stones of hard clay"
+    },
+    {
+     "n": 5,
+     "ar": "فَجَعَلَهُمۡ كَعَصۡفٖ مَّأۡكُولِۭ",
+     "en": "And He made them like eaten straw"
+    }
+   ]
+  },
+  {
+   "n": 107,
+   "ar": "الماعون",
+   "tr": "Al-Ma'un",
+   "en": "The Small kindnesses",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "أَرَءَيۡتَ ٱلَّذِي يُكَذِّبُ بِٱلدِّينِ",
+     "en": "Have you seen the one who denies the Recompense"
+    },
+    {
+     "n": 2,
+     "ar": "فَذَٰلِكَ ٱلَّذِي يَدُعُّ ٱلۡيَتِيمَ",
+     "en": "For that is the one who drives away the orphan"
+    },
+    {
+     "n": 3,
+     "ar": "وَلَا يَحُضُّ عَلَىٰ طَعَامِ ٱلۡمِسۡكِينِ",
+     "en": "And does not encourage the feeding of the poor"
+    },
+    {
+     "n": 4,
+     "ar": "فَوَيۡلٞ لِّلۡمُصَلِّينَ",
+     "en": "So woe to those who pray"
+    },
+    {
+     "n": 5,
+     "ar": "ٱلَّذِينَ هُمۡ عَن صَلَاتِهِمۡ سَاهُونَ",
+     "en": "[But] who are heedless of their prayer"
+    },
+    {
+     "n": 6,
+     "ar": "ٱلَّذِينَ هُمۡ يُرَآءُونَ",
+     "en": "Those who make show [of their deeds]"
+    },
+    {
+     "n": 7,
+     "ar": "وَيَمۡنَعُونَ ٱلۡمَاعُونَ",
+     "en": "And withhold [simple] assistance"
+    }
+   ]
+  },
+  {
+   "n": 111,
+   "ar": "المسد",
+   "tr": "Al-Masad",
+   "en": "The Palm Fiber",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "تَبَّتۡ يَدَآ أَبِي لَهَبٖ وَتَبَّ",
+     "en": "May the hands of Abu Lahab be ruined, and ruined is he"
+    },
+    {
+     "n": 2,
+     "ar": "مَآ أَغۡنَىٰ عَنۡهُ مَالُهُۥ وَمَا كَسَبَ",
+     "en": "His wealth will not avail him or that which he gained"
+    },
+    {
+     "n": 3,
+     "ar": "سَيَصۡلَىٰ نَارٗا ذَاتَ لَهَبٖ",
+     "en": "He will [enter to] burn in a Fire of [blazing] flame"
+    },
+    {
+     "n": 4,
+     "ar": "وَٱمۡرَأَتُهُۥ حَمَّالَةَ ٱلۡحَطَبِ",
+     "en": "And his wife [as well] - the carrier of firewood"
+    },
+    {
+     "n": 5,
+     "ar": "فِي جِيدِهَا حَبۡلٞ مِّن مَّسَدِۭ",
+     "en": "Around her neck is a rope of [twisted] fiber"
+    }
+   ]
+  },
+  {
+   "n": 109,
+   "ar": "الكافرون",
+   "tr": "Al-Kafirun",
+   "en": "The Disbelievers",
+   "ayat": [
+    {
+     "n": 1,
+     "ar": "قُلۡ يَـٰٓأَيُّهَا ٱلۡكَٰفِرُونَ",
+     "en": "Say, \"O disbelievers"
+    },
+    {
+     "n": 2,
+     "ar": "لَآ أَعۡبُدُ مَا تَعۡبُدُونَ",
+     "en": "I do not worship what you worship"
+    },
+    {
+     "n": 3,
+     "ar": "وَلَآ أَنتُمۡ عَٰبِدُونَ مَآ أَعۡبُدُ",
+     "en": "Nor are you worshippers of what I worship"
+    },
+    {
+     "n": 4,
+     "ar": "وَلَآ أَنَا۠ عَابِدٞ مَّا عَبَدتُّمۡ",
+     "en": "Nor will I be a worshipper of what you worship"
+    },
+    {
+     "n": 5,
+     "ar": "وَلَآ أَنتُمۡ عَٰبِدُونَ مَآ أَعۡبُدُ",
+     "en": "Nor will you be worshippers of what I worship"
+    },
+    {
+     "n": 6,
+     "ar": "لَكُمۡ دِينُكُمۡ وَلِيَ دِينِ",
+     "en": "For you is your religion, and for me is my religion"
+    }
+   ]
+  }
+ ]
+}

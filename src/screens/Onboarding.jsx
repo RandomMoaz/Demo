@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { LANGS } from '../lib/data'
 import { t as tr } from '../lib/i18n'
+import { setProfile as setKidsProfile } from '../kids/store'
 
 const Arrow = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
@@ -63,9 +64,14 @@ export function Name() {
 }
 
 export function Profile() {
-  const { lang, setPersona, go } = useApp()
+  const { lang, setPersona, go, name } = useApp()
   const t = tr(lang)
-  const pick = (p) => { setPersona(p); go('location') }
+  // a child goes straight to the kids section: no location is asked for or kept in a kids profile
+  const pick = (p) => {
+    setPersona(p)
+    if (p === 'child') { setKidsProfile({ active: true, lang, ...(name ? { name: name.split(/\s+/)[0] } : {}) }); go('kids') }
+    else go('location')
+  }
   const P = [
     ['child', 'طفل', t.child, 'M14 3a8 8 0 1 0 7 11.5A9 9 0 0 1 14 3z'],
     ['new', 'مسلم جديد', t.new, 'M12 21v-8M12 13C12 9 9 7 5 7c0 4 3 6 7 6zM12 13c0-4 3-6 7-6 0 4-3 6-7 6z'],
