@@ -1,0 +1,16 @@
+{
+  "note": "Word meanings for the few words the QURAN-NLP dictionary has no entry for (it is organised by root, and these particles and pronouns have none). Written for this app, not from the corpus. 'ar' is checked against the app's Qur'an text at build time. Review with a teacher.",
+  "words": {
+    "1:5:1": { "ar": "إياك", "tr": "iyyāka", "en": "You Alone" },
+    "1:5:3": { "ar": "وإياك", "tr": "wa-iyyāka", "en": "and You Alone" },
+    "1:7:4": { "ar": "عليهم", "tr": "ʿalayhim", "en": "on them" },
+    "1:7:7": { "ar": "عليهم", "tr": "ʿalayhim", "en": "on them" },
+    "1:7:8": { "ar": "ولا", "tr": "walā", "en": "and not" },
+    "108:1:1": { "ar": "انا", "tr": "innā", "en": "Indeed, We" },
+    "108:3:1": { "ar": "ان", "tr": "inna", "en": "Indeed" },
+    "108:3:3": { "ar": "هو", "tr": "huwa", "en": "he (is)" },
+    "114:4:1": { "ar": "من", "tr": "min", "en": "From" },
+    "114:5:3": { "ar": "في", "tr": "fī", "en": "into" },
+    "114:6:1": { "ar": "من", "tr": "mina", "en": "from" }
+  }
+}

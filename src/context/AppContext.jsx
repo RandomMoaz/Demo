@@ -1,15 +1,18 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import { t as tr } from '../lib/i18n'
+import { kidsModeOn, kidsState } from '../kids/store'
 
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
 
 export function AppProvider({ children }) {
-  const [screen, setScreen] = useState('landing')
+  // a parent who left kids mode on gets the kids section back when the app reopens
+  const kidsStart = kidsModeOn()
+  const [screen, setScreen] = useState(kidsStart ? 'kids' : 'landing')
   const [payload, setPayload] = useState(null)
-  const [lang, setLang] = useState('en')
-  const [persona, setPersona] = useState('new')
-  const [name, setName] = useState('')
+  const [lang, setLang] = useState(() => (kidsStart && kidsState().profile.lang) || 'en')
+  const [persona, setPersona] = useState(kidsStart ? 'child' : 'new')
+  const [name, setName] = useState(() => (kidsStart ? kidsState().profile.name : ''))
   const [loc, setLoc] = useState(null)
   const [theme, setTheme] = useState('day')
 

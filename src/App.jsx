@@ -12,9 +12,14 @@ import Journey from './screens/Journey'
 import Settings from './screens/Settings'
 import Events, { EventReminder } from './screens/Events'
 import AlarmRinger from './components/AlarmRinger'
+import KidsApp from './kids/KidsApp'
+
+// screens a child profile may still see: choosing a language, a name and a profile
+const ONBOARDING = ['landing', 'splash', 'language', 'name', 'profile']
 
 export default function App() {
-  const { screen, theme, dir, payload, lang } = useApp()
+  const { screen, theme, dir, payload, lang, persona } = useApp()
+  const kids = persona === 'child' && !ONBOARDING.includes(screen)
 
   // keep dir + lang on the document itself
   useEffect(() => {
@@ -51,6 +56,16 @@ export default function App() {
     return (
       <div className="site-root" data-theme={theme} lang={lang}>
         <Landing />
+      </div>
+    )
+  }
+
+  // the kids section is its own world: no Rashed, map, scanner, events or alarms from the grown-up app
+  if (kids) {
+    return (
+      <div className="app" data-theme="day" dir={dir} lang={lang}>
+        <StatusBar />
+        <KidsApp />
       </div>
     )
   }

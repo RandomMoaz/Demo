@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { SURAHS, ADHKAR, loadQuran } from '../lib/quran'
+import WordByWord, { hasWordByWord, wbwText } from '../components/WordByWord'
+import Recite, { reciteText } from '../components/Recite'
 
 const Back = ({ onClick }) => (
   <button className="back-ic" onClick={onClick} aria-label="back">
@@ -17,6 +19,8 @@ export function Mushaf() {
   const [error, setError] = useState(false)
   const [query, setQuery] = useState('')
   const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('mc_quran_fs')) || 27)
+  const [wbw, setWbw] = useState(false) // word-by-word study (Al-Fatihah, Al-Kawthar, An-Nas)
+  const [recite, setRecite] = useState(false) // recite aloud and get checked
   const showTr = lang !== 'ar'
 
   useEffect(() => { localStorage.setItem('mc_quran_fs', String(fontSize)) }, [fontSize])
@@ -54,6 +58,10 @@ export function Mushaf() {
           </div>
           {/* font size controls */}
           <div dir="ltr" style={{ marginInlineStart: 'auto', display: 'flex', gap: 6 }}>
+            <button className={`wbw-toggle${recite ? ' on' : ''}`} aria-pressed={recite} onClick={() => { setRecite(!recite); setWbw(false) }}>{reciteText(lang).toggle}</button>
+            {hasWordByWord(surah) && (
+              <button className={`wbw-toggle${wbw ? ' on' : ''}`} aria-pressed={wbw} onClick={() => { setWbw(!wbw); setRecite(false) }}>{wbwText(lang).toggle}</button>
+            )}
             <button className="back-ic latin" style={{ width: 34, height: 34, fontSize: 13, fontWeight: 700 }} onClick={() => setFontSize((f) => Math.max(20, f - 2))} aria-label="smaller">A−</button>
             <button className="back-ic latin" style={{ width: 34, height: 34, fontSize: 15, fontWeight: 700 }} onClick={() => setFontSize((f) => Math.min(44, f + 2))} aria-label="larger">A+</button>
           </div>
@@ -69,7 +77,10 @@ export function Mushaf() {
           {loading && <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 20 }}>… {t.qLoading}</p>}
           {error && <p style={{ color: 'var(--coral)', textAlign: 'center', padding: 20 }}>{t.qError}</p>}
 
-          {data && (
+          {data && wbw && hasWordByWord(surah) && <WordByWord surah={surah} lang={lang} fontSize={Math.round(fontSize * 0.85)} />}
+          {data && recite && <Recite key={surah} surah={surah} ayat={data.ayat} lang={lang} fontSize={fontSize} />}
+
+          {data && !(wbw && hasWordByWord(surah)) && !recite && (
             <div className="mushaf-frame">
               <div className="mushaf-flow" style={{ fontSize, lineHeight: 2.35, textAlign: 'justify', textAlignLast: 'center', direction: 'rtl' }}>
                 {data.ayat.map((a) => (
@@ -82,7 +93,7 @@ export function Mushaf() {
             </div>
           )}
 
-          {showTr && data && (
+          {showTr && data && !(wbw && hasWordByWord(surah)) && !recite && (
             <details className="mushaf-tr">
               <summary>{t.qTr}</summary>
               {data.ayat.map((a) => a.tr && (

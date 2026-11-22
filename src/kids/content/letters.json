@@ -1,0 +1,33 @@
+{
+  "note": "Arabic letters for the kids section. 'joins' is false for letters that never connect to the next letter. 'word' is a picture word for young children. Must be reviewed by a qualified teacher before release.",
+  "letters": [
+    { "id": 1, "ar": "ا", "name": "ألف", "tr": "Alif", "joins": false, "word": "أرنب", "pic": "🐰", "wordEn": "rabbit" },
+    { "id": 2, "ar": "ب", "name": "باء", "tr": "Baa", "joins": true, "word": "بطة", "pic": "🦆", "wordEn": "duck" },
+    { "id": 3, "ar": "ت", "name": "تاء", "tr": "Taa", "joins": true, "word": "تفاحة", "pic": "🍎", "wordEn": "apple" },
+    { "id": 4, "ar": "ث", "name": "ثاء", "tr": "Thaa", "joins": true, "word": "ثعلب", "pic": "🦊", "wordEn": "fox" },
+    { "id": 5, "ar": "ج", "name": "جيم", "tr": "Jeem", "joins": true, "word": "جمل", "pic": "🐪", "wordEn": "camel" },
+    { "id": 6, "ar": "ح", "name": "حاء", "tr": "Ḥaa", "joins": true, "word": "حصان", "pic": "🐎", "wordEn": "horse" },
+    { "id": 7, "ar": "خ", "name": "خاء", "tr": "Khaa", "joins": true, "word": "خروف", "pic": "🐑", "wordEn": "sheep" },
+    { "id": 8, "ar": "د", "name": "دال", "tr": "Daal", "joins": false, "word": "دب", "pic": "🐻", "wordEn": "bear" },
+    { "id": 9, "ar": "ذ", "name": "ذال", "tr": "Dhaal", "joins": false, "word": "ذرة", "pic": "🌽", "wordEn": "corn" },
+    { "id": 10, "ar": "ر", "name": "راء", "tr": "Raa", "joins": false, "word": "ريشة", "pic": "🪶", "wordEn": "feather" },
+    { "id": 11, "ar": "ز", "name": "زاي", "tr": "Zaay", "joins": false, "word": "زرافة", "pic": "🦒", "wordEn": "giraffe" },
+    { "id": 12, "ar": "س", "name": "سين", "tr": "Seen", "joins": true, "word": "سمكة", "pic": "🐟", "wordEn": "fish" },
+    { "id": 13, "ar": "ش", "name": "شين", "tr": "Sheen", "joins": true, "word": "شمس", "pic": "☀️", "wordEn": "sun" },
+    { "id": 14, "ar": "ص", "name": "صاد", "tr": "Ṣaad", "joins": true, "word": "صاروخ", "pic": "🚀", "wordEn": "rocket" },
+    { "id": 15, "ar": "ض", "name": "ضاد", "tr": "Ḍaad", "joins": true, "word": "ضفدع", "pic": "🐸", "wordEn": "frog" },
+    { "id": 16, "ar": "ط", "name": "طاء", "tr": "Ṭaa", "joins": true, "word": "طائرة", "pic": "✈️", "wordEn": "plane" },
+    { "id": 17, "ar": "ظ", "name": "ظاء", "tr": "Ẓaa", "joins": true, "word": "ظرف", "pic": "✉️", "wordEn": "envelope" },
+    { "id": 18, "ar": "ع", "name": "عين", "tr": "ʿAyn", "joins": true, "word": "عين", "pic": "👁️", "wordEn": "eye" },
+    { "id": 19, "ar": "غ", "name": "غين", "tr": "Ghayn", "joins": true, "word": "غيمة", "pic": "☁️", "wordEn": "cloud" },
+    { "id": 20, "ar": "ف", "name": "فاء", "tr": "Faa", "joins": true, "word": "فراشة", "pic": "🦋", "wordEn": "butterfly" },
+    { "id": 21, "ar": "ق", "name": "قاف", "tr": "Qaaf", "joins": true, "word": "قمر", "pic": "🌙", "wordEn": "moon" },
+    { "id": 22, "ar": "ك", "name": "كاف", "tr": "Kaaf", "joins": true, "word": "كتاب", "pic": "📖", "wordEn": "book" },
+    { "id": 23, "ar": "ل", "name": "لام", "tr": "Laam", "joins": true, "word": "ليمون", "pic": "🍋", "wordEn": "lemon" },
+    { "id": 24, "ar": "م", "name": "ميم", "tr": "Meem", "joins": true, "word": "موز", "pic": "🍌", "wordEn": "banana" },
+    { "id": 25, "ar": "ن", "name": "نون", "tr": "Noon", "joins": true, "word": "نحلة", "pic": "🐝", "wordEn": "bee" },
+    { "id": 26, "ar": "ه", "name": "هاء", "tr": "Haa", "joins": true, "word": "هدية", "pic": "🎁", "wordEn": "gift" },
+    { "id": 27, "ar": "و", "name": "واو", "tr": "Waaw", "joins": false, "word": "وردة", "pic": "🌹", "wordEn": "rose" },
+    { "id": 28, "ar": "ي", "name": "ياء", "tr": "Yaa", "joins": true, "word": "يد", "pic": "✋", "wordEn": "hand" }
+  ]
+}

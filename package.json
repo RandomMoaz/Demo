@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:quran-nlp": "node scripts/quran-nlp/build.mjs"
   },
   "dependencies": {
     "@zxing/browser": "^0.2.1",

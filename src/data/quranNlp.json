@@ -1,0 +1,2352 @@
+{
+ "source": {
+  "name": "QURAN-NLP (islamAndAi), morphology from the Quranic Arabic Corpus",
+  "repo": "https://github.com/islamAndAi/QURAN-NLP",
+  "corpus": "https://corpus.quran.com",
+  "note": "Root and lemma counts are over the whole Qur'an (77,429 words). Meanings marked \"app\" were added by this app.",
+  "built": "scripts/quran-nlp/build.mjs"
+ },
+ "totals": {
+  "words": 77429,
+  "roots": 1642,
+  "lemmas": 4832
+ },
+ "surahs": [
+  {
+   "n": 1,
+   "name": "الفاتحة",
+   "en": "Al-Fatihah",
+   "meaning": "The Opener",
+   "ayat": [
+    {
+     "n": 1,
+     "words": [
+      {
+       "ar": "بِسۡمِ",
+       "tr": "bis'mi",
+       "en": "In (the) name",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "س م و",
+       "lemma": "ٱسْم",
+       "lemmaCount": 39,
+       "segs": [
+        {
+         "ar": "بِ",
+         "kind": "prefix",
+         "tag": "P",
+         "codes": [
+          "bi+"
+         ]
+        },
+        {
+         "ar": "سْمِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱللَّهِ",
+       "tr": "l-lahi",
+       "en": "(of) Allah",
+       "gloss": "corpus",
+       "pos": "PN",
+       "root": "أ ل ه",
+       "lemma": "ٱللَّه",
+       "lemmaCount": 2699,
+       "segs": [
+        {
+         "ar": "ٱللَّهِ",
+         "kind": "stem",
+         "tag": "PN",
+         "pos": "PN",
+         "codes": [
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلرَّحۡمَٰنِ",
+       "tr": "l-raḥmāni",
+       "en": "the Most Gracious",
+       "gloss": "corpus",
+       "pos": "ADJ",
+       "root": "ر ح م",
+       "lemma": "رَّحْمَٰن",
+       "lemmaCount": 57,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "رَّحْمَٰنِ",
+         "kind": "stem",
+         "tag": "ADJ",
+         "pos": "ADJ",
+         "codes": [
+          "MS",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلرَّحِيمِ",
+       "tr": "l-raḥīmi",
+       "en": "the Most Merciful",
+       "gloss": "corpus",
+       "pos": "ADJ",
+       "root": "ر ح م",
+       "lemma": "رَّحِيم",
+       "lemmaCount": 116,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "رَّحِيمِ",
+         "kind": "stem",
+         "tag": "ADJ",
+         "pos": "ADJ",
+         "codes": [
+          "MS",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "words": [
+      {
+       "ar": "ٱلۡحَمۡدُ",
+       "tr": "al-ḥamdu",
+       "en": "All praises and thanks",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ح م د",
+       "lemma": "حَمْد",
+       "lemmaCount": 43,
+       "segs": [
+        {
+         "ar": "ٱلْ",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "حَمْدُ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "NOM"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "لِلَّهِ",
+       "tr": "lillahi",
+       "en": "(be) to Allah",
+       "gloss": "corpus",
+       "pos": "PN",
+       "root": "أ ل ه",
+       "lemma": "ٱللَّه",
+       "lemmaCount": 2699,
+       "segs": [
+        {
+         "ar": "لِ",
+         "kind": "prefix",
+         "tag": "P",
+         "codes": [
+          "l:P+"
+         ]
+        },
+        {
+         "ar": "لَّهِ",
+         "kind": "stem",
+         "tag": "PN",
+         "pos": "PN",
+         "codes": [
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "رَبِّ",
+       "tr": "rabbi",
+       "en": "the Lord",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ر ب ب",
+       "lemma": "رَبّ",
+       "lemmaCount": 975,
+       "segs": [
+        {
+         "ar": "رَبِّ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلۡعَٰلَمِينَ",
+       "tr": "l-ʿālamīna",
+       "en": "of the universe",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ع ل م",
+       "lemma": "عَٰلَمِين",
+       "lemmaCount": 73,
+       "segs": [
+        {
+         "ar": "ٱلْ",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "عَٰلَمِينَ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MP",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 3,
+     "words": [
+      {
+       "ar": "ٱلرَّحۡمَٰنِ",
+       "tr": "al-raḥmāni",
+       "en": "The Most Gracious",
+       "gloss": "corpus",
+       "pos": "ADJ",
+       "root": "ر ح م",
+       "lemma": "رَّحْمَٰن",
+       "lemmaCount": 57,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "رَّحْمَٰنِ",
+         "kind": "stem",
+         "tag": "ADJ",
+         "pos": "ADJ",
+         "codes": [
+          "MS",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلرَّحِيمِ",
+       "tr": "l-raḥīmi",
+       "en": "the Most Merciful",
+       "gloss": "corpus",
+       "pos": "ADJ",
+       "root": "ر ح م",
+       "lemma": "رَّحِيم",
+       "lemmaCount": 116,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "رَّحِيمِ",
+         "kind": "stem",
+         "tag": "ADJ",
+         "pos": "ADJ",
+         "codes": [
+          "MS",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 4,
+     "words": [
+      {
+       "ar": "مَٰلِكِ",
+       "tr": "māliki",
+       "en": "(The) Master",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "م ل ك",
+       "lemma": "مَٰلِك",
+       "lemmaCount": 3,
+       "segs": [
+        {
+         "ar": "مَٰلِكِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "ACT",
+          "PCPL",
+          "M",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "يَوۡمِ",
+       "tr": "yawmi",
+       "en": "(of the) Day",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ي و م",
+       "lemma": "يَوْم",
+       "lemmaCount": 405,
+       "segs": [
+        {
+         "ar": "يَوْمِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلدِّينِ",
+       "tr": "l-dīni",
+       "en": "(of the) Judgment",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "د ي ن",
+       "lemma": "دِين",
+       "lemmaCount": 92,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "دِّينِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 5,
+     "words": [
+      {
+       "ar": "إِيَّاكَ",
+       "tr": "iyyāka",
+       "en": "You Alone",
+       "gloss": "app",
+       "pos": "PRON",
+       "root": "",
+       "lemma": "إِيَّا",
+       "lemmaCount": 24,
+       "segs": [
+        {
+         "ar": "إِيَّاكَ",
+         "kind": "stem",
+         "tag": "PRON",
+         "pos": "PRON",
+         "codes": [
+          "2MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "نَعۡبُدُ",
+       "tr": "naʿbudu",
+       "en": "we worship",
+       "gloss": "corpus",
+       "pos": "V",
+       "root": "ع ب د",
+       "lemma": "عَبَدَ",
+       "lemmaCount": 122,
+       "segs": [
+        {
+         "ar": "نَعْبُدُ",
+         "kind": "stem",
+         "tag": "V",
+         "pos": "V",
+         "codes": [
+          "IMPF",
+          "1P"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "وَإِيَّاكَ",
+       "tr": "wa-iyyāka",
+       "en": "and You Alone",
+       "gloss": "app",
+       "pos": "PRON",
+       "root": "",
+       "lemma": "إِيَّا",
+       "lemmaCount": 24,
+       "segs": [
+        {
+         "ar": "وَ",
+         "kind": "prefix",
+         "tag": "CONJ",
+         "codes": [
+          "w:CONJ+"
+         ]
+        },
+        {
+         "ar": "إِيَّاكَ",
+         "kind": "stem",
+         "tag": "PRON",
+         "pos": "PRON",
+         "codes": [
+          "2MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "نَسۡتَعِينُ",
+       "tr": "nastaʿīnu",
+       "en": "we ask for help",
+       "gloss": "corpus",
+       "pos": "V",
+       "root": "ع و ن",
+       "lemma": "ٱسْتَعِينُ",
+       "lemmaCount": 4,
+       "segs": [
+        {
+         "ar": "نَسْتَعِينُ",
+         "kind": "stem",
+         "tag": "V",
+         "pos": "V",
+         "codes": [
+          "IMPF",
+          "(X)",
+          "1P"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 6,
+     "words": [
+      {
+       "ar": "ٱهۡدِنَا",
+       "tr": "ih'dinā",
+       "en": "Guide us",
+       "gloss": "corpus",
+       "pos": "V",
+       "root": "ه د ي",
+       "lemma": "هَدَى",
+       "lemmaCount": 144,
+       "segs": [
+        {
+         "ar": "ٱهْدِ",
+         "kind": "stem",
+         "tag": "V",
+         "pos": "V",
+         "codes": [
+          "IMPV",
+          "2MS"
+         ]
+        },
+        {
+         "ar": "نَا",
+         "kind": "suffix",
+         "tag": "PRON",
+         "codes": [
+          "PRON:1P"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلصِّرَٰطَ",
+       "tr": "l-ṣirāṭa",
+       "en": "(to) the path",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ص ر ط",
+       "lemma": "صِرَٰط",
+       "lemmaCount": 45,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "صِّرَٰطَ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "ACC"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلۡمُسۡتَقِيمَ",
+       "tr": "l-mus'taqīma",
+       "en": "the straight",
+       "gloss": "corpus",
+       "pos": "ADJ",
+       "root": "ق و م",
+       "lemma": "مُّسْتَقِيم",
+       "lemmaCount": 37,
+       "segs": [
+        {
+         "ar": "ٱلْ",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "مُسْتَقِيمَ",
+         "kind": "stem",
+         "tag": "ADJ",
+         "pos": "ADJ",
+         "codes": [
+          "ACT",
+          "PCPL",
+          "(X)",
+          "M",
+          "ACC"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 7,
+     "words": [
+      {
+       "ar": "صِرَٰطَ",
+       "tr": "ṣirāṭa",
+       "en": "(The) path",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ص ر ط",
+       "lemma": "صِرَٰط",
+       "lemmaCount": 45,
+       "segs": [
+        {
+         "ar": "صِرَٰطَ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "ACC"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلَّذِينَ",
+       "tr": "alladhīna",
+       "en": "(of) those",
+       "gloss": "corpus",
+       "pos": "REL",
+       "root": "",
+       "lemma": "ٱلَّذِى",
+       "lemmaCount": 1464,
+       "segs": [
+        {
+         "ar": "ٱلَّذِينَ",
+         "kind": "stem",
+         "tag": "REL",
+         "pos": "REL",
+         "codes": [
+          "MP"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "أَنۡعَمۡتَ",
+       "tr": "anʿamta",
+       "en": "You have bestowed (Your) Favors",
+       "gloss": "corpus",
+       "pos": "V",
+       "root": "ن ع م",
+       "lemma": "أَنْعَمَ",
+       "lemmaCount": 17,
+       "segs": [
+        {
+         "ar": "أَنْعَمْ",
+         "kind": "stem",
+         "tag": "V",
+         "pos": "V",
+         "codes": [
+          "PERF",
+          "(IV)",
+          "2MS"
+         ]
+        },
+        {
+         "ar": "تَ",
+         "kind": "suffix",
+         "tag": "PRON",
+         "codes": [
+          "PRON:2MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "عَلَيۡهِمۡ",
+       "tr": "ʿalayhim",
+       "en": "on them",
+       "gloss": "app",
+       "pos": "P",
+       "root": "",
+       "lemma": "عَلَىٰ",
+       "lemmaCount": 1445,
+       "segs": [
+        {
+         "ar": "عَلَيْ",
+         "kind": "stem",
+         "tag": "P",
+         "pos": "P",
+         "codes": []
+        },
+        {
+         "ar": "هِمْ",
+         "kind": "suffix",
+         "tag": "PRON",
+         "codes": [
+          "PRON:3MP"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "غَيۡرِ",
+       "tr": "ghayri",
+       "en": "not (of)",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "غ ي ر",
+       "lemma": "غَيْر",
+       "lemmaCount": 147,
+       "segs": [
+        {
+         "ar": "غَيْرِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلۡمَغۡضُوبِ",
+       "tr": "l-maghḍūbi",
+       "en": "those who earned (Your) wrath",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "غ ض ب",
+       "lemma": "مَغْضُوب",
+       "lemmaCount": 1,
+       "segs": [
+        {
+         "ar": "ٱلْ",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "مَغْضُوبِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "PASS",
+          "PCPL",
+          "M",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "عَلَيۡهِمۡ",
+       "tr": "ʿalayhim",
+       "en": "on them",
+       "gloss": "app",
+       "pos": "P",
+       "root": "",
+       "lemma": "عَلَىٰ",
+       "lemmaCount": 1445,
+       "segs": [
+        {
+         "ar": "عَلَيْ",
+         "kind": "stem",
+         "tag": "P",
+         "pos": "P",
+         "codes": []
+        },
+        {
+         "ar": "هِمْ",
+         "kind": "suffix",
+         "tag": "PRON",
+         "codes": [
+          "PRON:3MP"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "وَلَا",
+       "tr": "walā",
+       "en": "and not",
+       "gloss": "app",
+       "pos": "NEG",
+       "root": "",
+       "lemma": "لَا",
+       "lemmaCount": 1738,
+       "segs": [
+        {
+         "ar": "وَ",
+         "kind": "prefix",
+         "tag": "CONJ",
+         "codes": [
+          "w:CONJ+"
+         ]
+        },
+        {
+         "ar": "لَا",
+         "kind": "stem",
+         "tag": "NEG",
+         "pos": "NEG",
+         "codes": []
+        }
+       ]
+      },
+      {
+       "ar": "ٱلضَّآلِّينَ",
+       "tr": "l-ḍālīna",
+       "en": "(of) those who go astray",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ض ل ل",
+       "lemma": "ضَآلّ",
+       "lemmaCount": 14,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "ضَّآلِّينَ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "ACT",
+          "PCPL",
+          "MP",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "n": 108,
+   "name": "الكوثر",
+   "en": "Al-Kawthar",
+   "meaning": "The Abundance",
+   "ayat": [
+    {
+     "n": 1,
+     "words": [
+      {
+       "ar": "إِنَّآ",
+       "tr": "innā",
+       "en": "Indeed, We",
+       "gloss": "app",
+       "pos": "ACC",
+       "root": "",
+       "lemma": "إِنّ",
+       "lemmaCount": 1682,
+       "segs": [
+        {
+         "ar": "إِنَّ",
+         "kind": "stem",
+         "tag": "ACC",
+         "pos": "ACC",
+         "codes": []
+        },
+        {
+         "ar": "آ",
+         "kind": "suffix",
+         "tag": "PRON",
+         "codes": [
+          "PRON:1P"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "أَعۡطَيۡنَٰكَ",
+       "tr": "aʿṭaynāka",
+       "en": "We have given you",
+       "gloss": "corpus",
+       "pos": "V",
+       "root": "ع ط و",
+       "lemma": "أَعْطَىٰ",
+       "lemmaCount": 8,
+       "segs": [
+        {
+         "ar": "أَعْطَيْ",
+         "kind": "stem",
+         "tag": "V",
+         "pos": "V",
+         "codes": [
+          "PERF",
+          "(IV)",
+          "1P"
+         ]
+        },
+        {
+         "ar": "نَٰ",
+         "kind": "suffix",
+         "tag": "PRON",
+         "codes": [
+          "PRON:1P"
+         ]
+        },
+        {
+         "ar": "كَ",
+         "kind": "suffix",
+         "tag": "PRON",
+         "codes": [
+          "PRON:2MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلۡكَوۡثَرَ",
+       "tr": "l-kawthara",
+       "en": "Al-Kauthar",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ك ث ر",
+       "lemma": "كَوْثَر",
+       "lemmaCount": 1,
+       "segs": [
+        {
+         "ar": "ٱلْ",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "كَوْثَرَ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "ACC"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "words": [
+      {
+       "ar": "فَصَلِّ",
+       "tr": "faṣalli",
+       "en": "So pray",
+       "gloss": "corpus",
+       "pos": "V",
+       "root": "ص ل و",
+       "lemma": "صَلَّىٰ",
+       "lemmaCount": 12,
+       "segs": [
+        {
+         "ar": "فَ",
+         "kind": "prefix",
+         "tag": "REM",
+         "codes": [
+          "f:REM+"
+         ]
+        },
+        {
+         "ar": "صَلِّ",
+         "kind": "stem",
+         "tag": "V",
+         "pos": "V",
+         "codes": [
+          "IMPV",
+          "(II)",
+          "2MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "لِرَبِّكَ",
+       "tr": "lirabbika",
+       "en": "to your Lord",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ر ب ب",
+       "lemma": "رَبّ",
+       "lemmaCount": 975,
+       "segs": [
+        {
+         "ar": "لِ",
+         "kind": "prefix",
+         "tag": "P",
+         "codes": [
+          "l:P+"
+         ]
+        },
+        {
+         "ar": "رَبِّ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "GEN"
+         ]
+        },
+        {
+         "ar": "كَ",
+         "kind": "suffix",
+         "tag": "PRON",
+         "codes": [
+          "PRON:2MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "وَٱنۡحَرۡ",
+       "tr": "wa-in'ḥar",
+       "en": "and sacrifice",
+       "gloss": "corpus",
+       "pos": "V",
+       "root": "ن ح ر",
+       "lemma": "ٱنْحَرْ",
+       "lemmaCount": 1,
+       "segs": [
+        {
+         "ar": "وَ",
+         "kind": "prefix",
+         "tag": "CONJ",
+         "codes": [
+          "w:CONJ+"
+         ]
+        },
+        {
+         "ar": "ٱنْحَرْ",
+         "kind": "stem",
+         "tag": "V",
+         "pos": "V",
+         "codes": [
+          "IMPV",
+          "2MS"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 3,
+     "words": [
+      {
+       "ar": "إِنَّ",
+       "tr": "inna",
+       "en": "Indeed",
+       "gloss": "app",
+       "pos": "ACC",
+       "root": "",
+       "lemma": "إِنّ",
+       "lemmaCount": 1682,
+       "segs": [
+        {
+         "ar": "إِنَّ",
+         "kind": "stem",
+         "tag": "ACC",
+         "pos": "ACC",
+         "codes": []
+        }
+       ]
+      },
+      {
+       "ar": "شَانِئَكَ",
+       "tr": "shāni-aka",
+       "en": "your enemy",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ش ن أ",
+       "lemma": "شَانِئ",
+       "lemmaCount": 1,
+       "segs": [
+        {
+         "ar": "شَانِئَ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "ACT",
+          "PCPL",
+          "M",
+          "ACC"
+         ]
+        },
+        {
+         "ar": "كَ",
+         "kind": "suffix",
+         "tag": "PRON",
+         "codes": [
+          "PRON:2MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "هُوَ",
+       "tr": "huwa",
+       "en": "he (is)",
+       "gloss": "app",
+       "pos": "PRON",
+       "root": "",
+       "lemma": "",
+       "lemmaCount": 0,
+       "segs": [
+        {
+         "ar": "هُوَ",
+         "kind": "stem",
+         "tag": "PRON",
+         "pos": "PRON",
+         "codes": [
+          "3MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلۡأَبۡتَرُ",
+       "tr": "l-abtaru",
+       "en": "the one cut off",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ب ت ر",
+       "lemma": "أَبْتَر",
+       "lemmaCount": 1,
+       "segs": [
+        {
+         "ar": "ٱلْ",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "أَبْتَرُ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "NOM"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "n": 114,
+   "name": "الناس",
+   "en": "An-Nas",
+   "meaning": "Mankind",
+   "ayat": [
+    {
+     "n": 1,
+     "words": [
+      {
+       "ar": "قُلۡ",
+       "tr": "qul",
+       "en": "Say",
+       "gloss": "corpus",
+       "pos": "V",
+       "root": "ق و ل",
+       "lemma": "قَالَ",
+       "lemmaCount": 1618,
+       "segs": [
+        {
+         "ar": "قُلْ",
+         "kind": "stem",
+         "tag": "V",
+         "pos": "V",
+         "codes": [
+          "IMPV",
+          "2MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "أَعُوذُ",
+       "tr": "aʿūdhu",
+       "en": "I seek refuge",
+       "gloss": "corpus",
+       "pos": "V",
+       "root": "ع و ذ",
+       "lemma": "عُذْ",
+       "lemmaCount": 10,
+       "segs": [
+        {
+         "ar": "أَعُوذُ",
+         "kind": "stem",
+         "tag": "V",
+         "pos": "V",
+         "codes": [
+          "IMPF",
+          "1S"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "بِرَبِّ",
+       "tr": "birabbi",
+       "en": "in (the) Lord",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ر ب ب",
+       "lemma": "رَبّ",
+       "lemmaCount": 975,
+       "segs": [
+        {
+         "ar": "بِ",
+         "kind": "prefix",
+         "tag": "P",
+         "codes": [
+          "bi+"
+         ]
+        },
+        {
+         "ar": "رَبِّ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "M",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلنَّاسِ",
+       "tr": "l-nāsi",
+       "en": "(of) mankind",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ن و س",
+       "lemma": "نَّاس",
+       "lemmaCount": 241,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "نَّاسِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MP",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 2,
+     "words": [
+      {
+       "ar": "مَلِكِ",
+       "tr": "maliki",
+       "en": "(The) King",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "م ل ك",
+       "lemma": "مَلِك",
+       "lemmaCount": 15,
+       "segs": [
+        {
+         "ar": "مَلِكِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MS",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلنَّاسِ",
+       "tr": "l-nāsi",
+       "en": "(of) mankind",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ن و س",
+       "lemma": "نَّاس",
+       "lemmaCount": 241,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "نَّاسِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MP",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 3,
+     "words": [
+      {
+       "ar": "إِلَٰهِ",
+       "tr": "ilāhi",
+       "en": "(The) God",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "أ ل ه",
+       "lemma": "إِلَٰه",
+       "lemmaCount": 147,
+       "segs": [
+        {
+         "ar": "إِلَٰهِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MS",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلنَّاسِ",
+       "tr": "l-nāsi",
+       "en": "(of) mankind",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ن و س",
+       "lemma": "نَّاس",
+       "lemmaCount": 241,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "نَّاسِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MP",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 4,
+     "words": [
+      {
+       "ar": "مِن",
+       "tr": "min",
+       "en": "From",
+       "gloss": "app",
+       "pos": "P",
+       "root": "",
+       "lemma": "مِن",
+       "lemmaCount": 3226,
+       "segs": [
+        {
+         "ar": "مِن",
+         "kind": "stem",
+         "tag": "P",
+         "pos": "P",
+         "codes": []
+        }
+       ]
+      },
+      {
+       "ar": "شَرِّ",
+       "tr": "sharri",
+       "en": "(the) evil",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ش ر ر",
+       "lemma": "شَرّ",
+       "lemmaCount": 30,
+       "segs": [
+        {
+         "ar": "شَرِّ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MS",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلۡوَسۡوَاسِ",
+       "tr": "l-waswāsi",
+       "en": "(of) the whisperer",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "و س و س",
+       "lemma": "وَسْوَاس",
+       "lemmaCount": 1,
+       "segs": [
+        {
+         "ar": "ٱلْ",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "وَسْوَاسِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MS",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلۡخَنَّاسِ",
+       "tr": "l-khanāsi",
+       "en": "the one who withdraws",
+       "gloss": "corpus",
+       "pos": "ADJ",
+       "root": "خ ن س",
+       "lemma": "خَنَّاس",
+       "lemmaCount": 1,
+       "segs": [
+        {
+         "ar": "ٱلْ",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "خَنَّاسِ",
+         "kind": "stem",
+         "tag": "ADJ",
+         "pos": "ADJ",
+         "codes": [
+          "MS",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 5,
+     "words": [
+      {
+       "ar": "ٱلَّذِي",
+       "tr": "alladhī",
+       "en": "The one who",
+       "gloss": "corpus",
+       "pos": "REL",
+       "root": "",
+       "lemma": "ٱلَّذِى",
+       "lemmaCount": 1464,
+       "segs": [
+        {
+         "ar": "ٱلَّذِى",
+         "kind": "stem",
+         "tag": "REL",
+         "pos": "REL",
+         "codes": [
+          "MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "يُوَسۡوِسُ",
+       "tr": "yuwaswisu",
+       "en": "whispers",
+       "gloss": "corpus",
+       "pos": "V",
+       "root": "و س و س",
+       "lemma": "وَسْوَسَ",
+       "lemmaCount": 4,
+       "segs": [
+        {
+         "ar": "يُوَسْوِسُ",
+         "kind": "stem",
+         "tag": "V",
+         "pos": "V",
+         "codes": [
+          "IMPF",
+          "3MS"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "فِي",
+       "tr": "fī",
+       "en": "into",
+       "gloss": "app",
+       "pos": "P",
+       "root": "",
+       "lemma": "فِى",
+       "lemmaCount": 1701,
+       "segs": [
+        {
+         "ar": "فِى",
+         "kind": "stem",
+         "tag": "P",
+         "pos": "P",
+         "codes": []
+        }
+       ]
+      },
+      {
+       "ar": "صُدُورِ",
+       "tr": "ṣudūri",
+       "en": "(the) breasts",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ص د ر",
+       "lemma": "صَدْر",
+       "lemmaCount": 44,
+       "segs": [
+        {
+         "ar": "صُدُورِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MP",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "ٱلنَّاسِ",
+       "tr": "l-nāsi",
+       "en": "(of) mankind",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ن و س",
+       "lemma": "نَّاس",
+       "lemmaCount": 241,
+       "segs": [
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "نَّاسِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MP",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "n": 6,
+     "words": [
+      {
+       "ar": "مِنَ",
+       "tr": "mina",
+       "en": "from",
+       "gloss": "app",
+       "pos": "P",
+       "root": "",
+       "lemma": "مِن",
+       "lemmaCount": 3226,
+       "segs": [
+        {
+         "ar": "مِنَ",
+         "kind": "stem",
+         "tag": "P",
+         "pos": "P",
+         "codes": []
+        }
+       ]
+      },
+      {
+       "ar": "ٱلۡجِنَّةِ",
+       "tr": "l-jinati",
+       "en": "the jinn",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ج ن ن",
+       "lemma": "جِنَّة",
+       "lemmaCount": 10,
+       "segs": [
+        {
+         "ar": "ٱلْ",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "جِنَّةِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "F",
+          "GEN"
+         ]
+        }
+       ]
+      },
+      {
+       "ar": "وَٱلنَّاسِ",
+       "tr": "wal-nāsi",
+       "en": "and men",
+       "gloss": "corpus",
+       "pos": "N",
+       "root": "ن و س",
+       "lemma": "نَّاس",
+       "lemmaCount": 241,
+       "segs": [
+        {
+         "ar": "وَ",
+         "kind": "prefix",
+         "tag": "CONJ",
+         "codes": [
+          "w:CONJ+"
+         ]
+        },
+        {
+         "ar": "ٱل",
+         "kind": "prefix",
+         "tag": "DET",
+         "codes": [
+          "Al+"
+         ]
+        },
+        {
+         "ar": "نَّاسِ",
+         "kind": "stem",
+         "tag": "N",
+         "pos": "N",
+         "codes": [
+          "MP",
+          "GEN"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "roots": {
+  "ش ن أ": {
+   "count": 3,
+   "lemmas": [
+    {
+     "ar": "شَنَـَٔان",
+     "count": 2
+    },
+    {
+     "ar": "شَانِئ",
+     "count": 1
+    }
+   ]
+  },
+  "ش ر ر": {
+   "count": 31,
+   "lemmas": [
+    {
+     "ar": "شَرّ",
+     "count": 30
+    },
+    {
+     "ar": "شَرَر",
+     "count": 1
+    }
+   ]
+  },
+  "أ ل ه": {
+   "count": 2851,
+   "lemmas": [
+    {
+     "ar": "ٱللَّه",
+     "count": 2699
+    },
+    {
+     "ar": "إِلَٰه",
+     "count": 147
+    },
+    {
+     "ar": "ٱللَّهُمَّ",
+     "count": 5
+    }
+   ]
+  },
+  "ض ل ل": {
+   "count": 191,
+   "lemmas": [
+    {
+     "ar": "أَضَلَّ",
+     "count": 64
+    },
+    {
+     "ar": "ضَلَّ",
+     "count": 53
+    },
+    {
+     "ar": "ضَلَٰل",
+     "count": 38
+    },
+    {
+     "ar": "ضَآلّ",
+     "count": 14
+    },
+    {
+     "ar": "ضَلَٰلَة",
+     "count": 9
+    }
+   ]
+  },
+  "ع ط و": {
+   "count": 14,
+   "lemmas": [
+    {
+     "ar": "أَعْطَىٰ",
+     "count": 8
+    },
+    {
+     "ar": "عَطَآء",
+     "count": 5
+    },
+    {
+     "ar": "تَعَاطَىٰ",
+     "count": 1
+    }
+   ]
+  },
+  "ع ب د": {
+   "count": 275,
+   "lemmas": [
+    {
+     "ar": "عَبْد",
+     "count": 131
+    },
+    {
+     "ar": "عَبَدَ",
+     "count": 122
+    },
+    {
+     "ar": "عَابِد",
+     "count": 11
+    },
+    {
+     "ar": "عِبَادَت",
+     "count": 9
+    },
+    {
+     "ar": "عَبَّد",
+     "count": 1
+    }
+   ]
+  },
+  "ع ل م": {
+   "count": 854,
+   "lemmas": [
+    {
+     "ar": "عَلِمَ",
+     "count": 382
+    },
+    {
+     "ar": "عَلِيم",
+     "count": 163
+    },
+    {
+     "ar": "عِلْم",
+     "count": 105
+    },
+    {
+     "ar": "عَٰلَمِين",
+     "count": 73
+    },
+    {
+     "ar": "أَعْلَم",
+     "count": 49
+    }
+   ]
+  },
+  "ع و ذ": {
+   "count": 17,
+   "lemmas": [
+    {
+     "ar": "عُذْ",
+     "count": 10
+    },
+    {
+     "ar": "ٱسْتَعِذْ",
+     "count": 4
+    },
+    {
+     "ar": "مَعَاذ",
+     "count": 2
+    },
+    {
+     "ar": "أُعِيذُ",
+     "count": 1
+    }
+   ]
+  },
+  "ع و ن": {
+   "count": 11,
+   "lemmas": [
+    {
+     "ar": "ٱسْتَعِينُ",
+     "count": 4
+    },
+    {
+     "ar": "تَعَاوَنُ",
+     "count": 2
+    },
+    {
+     "ar": "مُسْتَعَان",
+     "count": 2
+    },
+    {
+     "ar": "أَعَانَ",
+     "count": 2
+    },
+    {
+     "ar": "عَوَان",
+     "count": 1
+    }
+   ]
+  },
+  "ح م د": {
+   "count": 63,
+   "lemmas": [
+    {
+     "ar": "حَمْد",
+     "count": 43
+    },
+    {
+     "ar": "حَمِيد",
+     "count": 17
+    },
+    {
+     "ar": "يُحْمَدُ",
+     "count": 1
+    },
+    {
+     "ar": "حَٰمِدُون",
+     "count": 1
+    },
+    {
+     "ar": "مَّحْمُود",
+     "count": 1
+    }
+   ]
+  },
+  "ص د ر": {
+   "count": 46,
+   "lemmas": [
+    {
+     "ar": "صَدْر",
+     "count": 44
+    },
+    {
+     "ar": "يُصْدِرَ",
+     "count": 1
+    },
+    {
+     "ar": "يَصْدُرُ",
+     "count": 1
+    }
+   ]
+  },
+  "ص ل و": {
+   "count": 99,
+   "lemmas": [
+    {
+     "ar": "صَلَوٰة",
+     "count": 83
+    },
+    {
+     "ar": "صَلَّىٰ",
+     "count": 12
+    },
+    {
+     "ar": "مُصَلِّين",
+     "count": 3
+    },
+    {
+     "ar": "مُصَلًّى",
+     "count": 1
+    }
+   ]
+  },
+  "ص ر ط": {
+   "count": 45,
+   "lemmas": [
+    {
+     "ar": "صِرَٰط",
+     "count": 45
+    }
+   ]
+  },
+  "ب ت ر": {
+   "count": 1,
+   "lemmas": [
+    {
+     "ar": "أَبْتَر",
+     "count": 1
+    }
+   ]
+  },
+  "د ي ن": {
+   "count": 101,
+   "lemmas": [
+    {
+     "ar": "دِين",
+     "count": 92
+    },
+    {
+     "ar": "دَيْن",
+     "count": 5
+    },
+    {
+     "ar": "مَدِينِين",
+     "count": 2
+    },
+    {
+     "ar": "تَدَايَن",
+     "count": 1
+    },
+    {
+     "ar": "يَدِينُ",
+     "count": 1
+    }
+   ]
+  },
+  "غ ض ب": {
+   "count": 24,
+   "lemmas": [
+    {
+     "ar": "غَضَب",
+     "count": 14
+    },
+    {
+     "ar": "غَضِبَ",
+     "count": 6
+    },
+    {
+     "ar": "غَضْبَٰن",
+     "count": 2
+    },
+    {
+     "ar": "مَغْضُوب",
+     "count": 1
+    },
+    {
+     "ar": "مُغَٰضِب",
+     "count": 1
+    }
+   ]
+  },
+  "غ ي ر": {
+   "count": 154,
+   "lemmas": [
+    {
+     "ar": "غَيْر",
+     "count": 147
+    },
+    {
+     "ar": "يُغَيِّرُ",
+     "count": 4
+    },
+    {
+     "ar": "مُغَيِّر",
+     "count": 1
+    },
+    {
+     "ar": "يَتَغَيَّرْ",
+     "count": 1
+    },
+    {
+     "ar": "مُغِيرَٰت",
+     "count": 1
+    }
+   ]
+  },
+  "ه د ي": {
+   "count": 316,
+   "lemmas": [
+    {
+     "ar": "هَدَى",
+     "count": 144
+    },
+    {
+     "ar": "هُدًى",
+     "count": 85
+    },
+    {
+     "ar": "ٱهْتَدَىٰ",
+     "count": 40
+    },
+    {
+     "ar": "مُّهْتَدُون",
+     "count": 17
+    },
+    {
+     "ar": "هَدْي",
+     "count": 7
+    }
+   ]
+  },
+  "ج ن ن": {
+   "count": 201,
+   "lemmas": [
+    {
+     "ar": "جَنَّة",
+     "count": 147
+    },
+    {
+     "ar": "جِنّ",
+     "count": 22
+    },
+    {
+     "ar": "مَجْنُون",
+     "count": 11
+    },
+    {
+     "ar": "جِنَّة",
+     "count": 10
+    },
+    {
+     "ar": "جَآنّ",
+     "count": 7
+    }
+   ]
+  },
+  "ك ث ر": {
+   "count": 167,
+   "lemmas": [
+    {
+     "ar": "أَكْثَر",
+     "count": 80
+    },
+    {
+     "ar": "كَثِير",
+     "count": 63
+    },
+    {
+     "ar": "كَثِيرَة",
+     "count": 11
+    },
+    {
+     "ar": "ٱسْتَكْثَرْ",
+     "count": 3
+    },
+    {
+     "ar": "كَثُرَ",
+     "count": 2
+    }
+   ]
+  },
+  "م ل ك": {
+   "count": 206,
+   "lemmas": [
+    {
+     "ar": "مَلَك",
+     "count": 88
+    },
+    {
+     "ar": "مُلْك",
+     "count": 48
+    },
+    {
+     "ar": "مَلَكَتْ",
+     "count": 44
+    },
+    {
+     "ar": "مَلِك",
+     "count": 15
+    },
+    {
+     "ar": "مَلَكُوت",
+     "count": 4
+    }
+   ]
+  },
+  "ن ع م": {
+   "count": 140,
+   "lemmas": [
+    {
+     "ar": "نِعْمَة",
+     "count": 50
+    },
+    {
+     "ar": "نَّعَم",
+     "count": 33
+    },
+    {
+     "ar": "نِعْمَ",
+     "count": 18
+    },
+    {
+     "ar": "أَنْعَمَ",
+     "count": 17
+    },
+    {
+     "ar": "نَعِيم",
+     "count": 17
+    }
+   ]
+  },
+  "ن ح ر": {
+   "count": 1,
+   "lemmas": [
+    {
+     "ar": "ٱنْحَرْ",
+     "count": 1
+    }
+   ]
+  },
+  "ن و س": {
+   "count": 241,
+   "lemmas": [
+    {
+     "ar": "نَّاس",
+     "count": 241
+    }
+   ]
+  },
+  "ق و ل": {
+   "count": 1722,
+   "lemmas": [
+    {
+     "ar": "قَالَ",
+     "count": 1618
+    },
+    {
+     "ar": "قَوْل",
+     "count": 92
+    },
+    {
+     "ar": "قَآئِل",
+     "count": 5
+    },
+    {
+     "ar": "قِيل",
+     "count": 4
+    },
+    {
+     "ar": "تَقَوَّلَ",
+     "count": 2
+    }
+   ]
+  },
+  "ق و م": {
+   "count": 660,
+   "lemmas": [
+    {
+     "ar": "قَوْم",
+     "count": 383
+    },
+    {
+     "ar": "قِيَٰمَة",
+     "count": 70
+    },
+    {
+     "ar": "أَقَامَ",
+     "count": 54
+    },
+    {
+     "ar": "مُّسْتَقِيم",
+     "count": 37
+    },
+    {
+     "ar": "قَامَ",
+     "count": 33
+    }
+   ]
+  },
+  "ر ح م": {
+   "count": 339,
+   "lemmas": [
+    {
+     "ar": "رَّحِيم",
+     "count": 116
+    },
+    {
+     "ar": "رَحْمَة",
+     "count": 114
+    },
+    {
+     "ar": "رَّحْمَٰن",
+     "count": 57
+    },
+    {
+     "ar": "رَّحِمَ",
+     "count": 28
+    },
+    {
+     "ar": "أَرْحَام",
+     "count": 12
+    }
+   ]
+  },
+  "ر ب ب": {
+   "count": 980,
+   "lemmas": [
+    {
+     "ar": "رَبّ",
+     "count": 975
+    },
+    {
+     "ar": "رَبَّٰنِيِّن",
+     "count": 3
+    },
+    {
+     "ar": "رِبِّيُّون",
+     "count": 1
+    },
+    {
+     "ar": "رَبَٰٓئِب",
+     "count": 1
+    }
+   ]
+  },
+  "س م و": {
+   "count": 381,
+   "lemmas": [
+    {
+     "ar": "سَمَآء",
+     "count": 310
+    },
+    {
+     "ar": "ٱسْم",
+     "count": 39
+    },
+    {
+     "ar": "مُّسَمًّى",
+     "count": 21
+    },
+    {
+     "ar": "سَمَّىٰ",
+     "count": 8
+    },
+    {
+     "ar": "سَمِيّ",
+     "count": 2
+    }
+   ]
+  },
+  "و س و س": {
+   "count": 5,
+   "lemmas": [
+    {
+     "ar": "وَسْوَسَ",
+     "count": 4
+    },
+    {
+     "ar": "وَسْوَاس",
+     "count": 1
+    }
+   ]
+  },
+  "خ ن س": {
+   "count": 2,
+   "lemmas": [
+    {
+     "ar": "خُنَّس",
+     "count": 1
+    },
+    {
+     "ar": "خَنَّاس",
+     "count": 1
+    }
+   ]
+  },
+  "ي و م": {
+   "count": 405,
+   "lemmas": [
+    {
+     "ar": "يَوْم",
+     "count": 405
+    }
+   ]
+  }
+ }
+}
