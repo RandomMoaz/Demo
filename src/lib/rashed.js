@@ -15,6 +15,46 @@ export function norm(s = '') {
 }
 const isLatin = (s) => /^[a-z0-9\s'-]+$/i.test(s)
 
+/* ---------- word forms and typos (Latin script) ---------- */
+
+/** "praying" -> "pray", "prayers" -> "pray", "ablutions" -> "ablution", "fasting" -> "fast". */
+export function stem(w) {
+  if (!/^[a-z]+$/.test(w) || w.length <= 3) return w
+  for (const [end, min] of [['ings', 6], ['ing', 6], ['ers', 6], ['er', 6], ['ied', 5], ['ies', 5], ['ed', 5], ['es', 5], ['s', 4]]) {
+    if (w.length >= min && w.endsWith(end) && !w.endsWith('ss')) return end === 'ies' || end === 'ied' ? `${w.slice(0, -3)}y` : w.slice(0, -end.length)
+  }
+  return w
+}
+
+/** Damerau-Levenshtein distance, stopping early once it is over `max`. */
+export function editDistance(a, b, max = 2) {
+  if (Math.abs(a.length - b.length) > max) return max + 1
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i])
+  for (let j = 1; j <= b.length; j++) d[0][j] = j
+  for (let i = 1; i <= a.length; i++) {
+    let rowMin = Infinity
+    for (let j = 1; j <= b.length; j++) {
+      const c = a[i - 1] === b[j - 1] ? 0 : 1
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + c)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1)
+      rowMin = Math.min(rowMin, d[i][j])
+    }
+    if (rowMin > max) return max + 1
+  }
+  return d[a.length][b.length]
+}
+
+/** Typo room: none for short words (pray/play stay apart), one letter from 5 letters, two from 8. */
+const room = (w) => (w.length >= 8 ? 2 : w.length >= 5 ? 1 : 0)
+
+/** How a keyword word was found among the question's words: 1 exact, 0.7 with a typo, 0 not at all. */
+function wordHit(kw, words) {
+  const k = stem(kw)
+  if (words.includes(k)) return 1
+  const r = room(k)
+  return r && words.some((w) => editDistance(w, k, r) <= r) ? 0.7 : 0
+}
+
 /* k keywords · q question · s search phrase · a answer · steps · sites · next */
 export const TOPICS = [
   {
@@ -328,14 +368,49 @@ export const TOPICS = [
 
 const BY_ID = Object.fromEntries(TOPICS.map((tp) => [tp.id, tp]))
 
-/* score by keywords hit; longer keywords are worth more */
-function score(topic, q) {
+/* questions in German, French, Spanish and Japanese, and common English misspellings */
+const ALIASES = {
+  shahada: ['muslim werden', 'konvertieren', 'glaubensbekenntnis', 'devenir musulman', 'se convertir', 'chahada', 'hacerse musulman', 'convertirse', '入信', '改宗', 'シャハーダ', 'ムスリムになる'],
+  pillars: ['säulen des islam', 'glaubensartikel', 'piliers de l islam', 'piliers de la foi', 'pilares del islam', 'pilares de la fe', '五行', '六信', 'イスラムの柱'],
+  wudu: ['wodu', 'wudoo', 'wuzu', 'wadu', 'gebetswaschung', 'waschung', 'ablutions', 'woudou', 'abluciones', 'ablución', 'ウドゥー', 'ウドゥ', '清め'],
+  ghusl: ['ganzkörperwaschung', 'rituelle waschung', 'grandes ablutions', 'ghousl', 'baño ritual', 'グスル', '全身の清め'],
+  tayammum: ['trockene waschung', 'ablutions sèches', 'tayammoum', 'ablución seca', 'タヤンムム'],
+  salah: ['beten', 'gebet', 'bete', 'prière', 'prier', 'salat', 'rezar', 'oración', 'orar', '礼拝', 'お祈り', 'サラー', '祈り方'],
+  prayer_times: ['gebetszeiten', 'horaires de prière', 'heure de prière', 'horarios de oración', 'hora de rezar', '礼拝時間', '礼拝の時間'],
+  missed_prayer: ['verpasstes gebet', 'nachholen', 'prière manquée', 'rattraper', 'oración perdida', 'recuperar oración', '礼拝を逃した', 'カダー'],
+  jumuah: ['freitagsgebet', 'prière du vendredi', 'oración del viernes', '金曜礼拝', 'ジュムア'],
+  mosque: ['moschee', 'mosquée', 'mezquita', 'モスク', 'マスジド'],
+  quran: ['koran', 'coran', 'corán', 'クルアーン', 'コーラン'],
+  fasting: ['fasten', 'jeûne', 'jeûner', 'ayuno', 'ayunar', 'ramadán', '断食', 'ラマダン'],
+  arafah: ['tag von arafa', 'jour d arafat', 'día de arafat', 'アラファの日'],
+  ashura: ['aschura', 'achoura', 'アーシューラー'],
+  zakat: ['almosen', 'aumône', 'limosna', 'ザカート', '喜捨'],
+  hajj: ['hadsch', 'pilgerfahrt', 'pèlerinage', 'peregrinación', 'ハッジ', '巡礼'],
+  halal_food: ['halal essen', 'schweinefleisch', 'gelatine', 'nourriture halal', 'porc', 'gélatine', 'comida halal', 'cerdo', 'gelatina', 'ハラール', '豚肉', 'ゼラチン'],
+  alcohol: ['alkohol', 'alcool', 'アルコール', 'お酒'],
+  riba: ['zinsen', 'intérêts', 'usure', 'interés', 'usura', '利息', 'リバー'],
+  hijab: ['kopftuch', 'hidschab', 'voile', 'velo', 'hiyab', 'ヒジャブ', 'スカーフ'],
+  family: ['familie', 'eltern', 'famille', 'familia', 'padres', '家族', '両親'],
+  name_change: ['namen ändern', 'changer de nom', 'cambiar el nombre', '名前を変える', '改名'],
+  dua: ['bittgebet', 'invocation', 'doua', 'súplica', 'ドゥアー', '祈願'],
+  names_of_allah: ['namen allahs', '99 namen', 'noms d allah', '99 noms', 'nombres de allah', '99 nombres', 'アッラーの御名', '99の御名'],
+  menses: ['menstruation', 'periode', 'règles', 'menstruación', 'regla', '生理', '月経'],
+}
+for (const tp of TOPICS) tp.k = [...tp.k, ...(ALIASES[tp.id] || [])]
+
+/* score by keywords hit; longer keywords are worth more, a typo counts for less */
+function score(topic, q, words) {
   let s = 0
   for (const kw of topic.k) {
     const k = norm(kw)
     if (!k) continue
-    const hit = isLatin(k) ? new RegExp(`(^| )${k}( |$)`).test(q) : q.includes(k)
-    if (hit) s += Math.max(4, k.length)
+    let hit = 0
+    if (isLatin(k)) {
+      const parts = k.split(' ')
+      const hits = parts.map((w) => wordHit(w, words))
+      hit = hits.every(Boolean) ? Math.min(...hits) : 0
+    } else hit = q.includes(k) ? 1 : 0
+    if (hit) s += Math.max(4, k.length * hit) // a typo counts for less, but a found keyword always counts
   }
   // the canonical question — tapped as a chip, or typed verbatim — always wins
   for (const l of ['en', 'ar']) if (q === norm(topic.q[l])) s += 100
@@ -344,16 +419,39 @@ function score(topic, q) {
 
 const MIN_SCORE = 4
 
-export function match(query) {
+/** Every topic that fits the question, best first. */
+export function rank(query, min = MIN_SCORE) {
   const q = norm(query)
-  if (!q) return null
-  let best = null
-  let bestScore = 0
-  for (const tp of TOPICS) {
-    const s = score(tp, q)
-    if (s > bestScore) { bestScore = s; best = tp }
+  if (!q) return []
+  const words = q.split(' ').map(stem)
+  return TOPICS.map((tp) => ({ topic: tp, score: score(tp, q, words) }))
+    .filter((r) => r.score >= min)
+    .sort((a, b) => b.score - a.score)
+}
+
+export function match(query) {
+  return rank(query)[0] || null
+}
+
+/* ---------- small talk ---------- */
+const SMALL = {
+  greet: ['salam', 'salaam', 'assalamu alaikum', 'as salamu alaykum', 'assalamualaikum', 'salam alaikum', 'hello', 'hi', 'hey', 'السلام عليكم', 'سلام', 'مرحبا', 'اهلا', 'hallo', 'bonjour', 'salut', 'hola', 'こんにちは'],
+  thanks: ['thanks', 'thank you', 'thx', 'jazakallah', 'jazak allah', 'jazakallahu khairan', 'شكرا', 'جزاك الله', 'جزاك الله خيرا', 'danke', 'merci', 'gracias', 'ありがとう'],
+  who: ['who are you', 'what are you', 'your name', 'من انت', 'ما اسمك', 'wer bist du', 'qui es tu', 'quien eres', 'quién eres', 'あなたは誰', 'だれ'],
+  help: ['what can you do', 'help', 'how does this work', 'what do you know', 'ماذا تستطيع', 'ماذا تعرف', 'ساعدني', 'was kannst du', 'hilfe', 'que peux tu faire', 'aide', 'qué puedes hacer', 'ayuda', '何ができる', 'ヘルプ'],
+  bye: ['bye', 'goodbye', 'see you', 'مع السلامه', 'الى اللقاء', 'tschüss', 'au revoir', 'adiós', 'adios', 'さようなら'],
+}
+/** A greeting, thanks, "who are you", "help" or goodbye — only for short messages, never over a real question. */
+export function smallTalk(query) {
+  const q = norm(query)
+  if (!q || q.split(' ').length > 6) return null
+  for (const [intent, list] of Object.entries(SMALL)) {
+    for (const kw of list) {
+      const k = norm(kw)
+      if (isLatin(k) ? new RegExp(`(^| )${k}( |$)`).test(q) : q.includes(k)) return intent
+    }
   }
-  return bestScore >= MIN_SCORE ? { topic: best, score: bestScore } : null
+  return null
 }
 
 /* search each site with the topic's Arabic phrasing — these sites are in Arabic */
@@ -364,28 +462,45 @@ function sourceList(domains, phrase) {
   }))
 }
 
-/** answer offline; text is null when nothing matches, caller supplies the fallback */
+/**
+ * Answer offline. text is null when nothing matches (the caller supplies the fallback). Also returns:
+ * also — other topics the question touches; suggest — near misses for "did you mean"; small — a small-talk intent;
+ * english — true when the user's language has no written answer yet and English is shown.
+ */
 export function answer(query, lang = 'en') {
   const L = lang === 'ar' ? 'ar' : 'en'
-  const m = match(query)
+  // a bare greeting ("salam", "thanks") is small talk, even if it looks like a topic word with a typo
+  const bare = norm(query).split(' ').length <= 3 ? smallTalk(query) : null
+  const ranked = bare ? [] : rank(query)
+  const m = ranked[0]
   if (!m) {
+    const small = bare || smallTalk(query)
+    const near = rank(query, 2).slice(0, 3)
     return {
       id: null,
       matched: false,
+      small,
       text: null,
       steps: null,
-      sources: sourceList(ALL, query),
-      followups: ['salah', 'wudu', 'quran'].map((id) => BY_ID[id].q[L]),
+      sources: small ? null : sourceList(ALL, query),
+      followups: small ? starters(lang) : ['salah', 'wudu', 'quran'].map((id) => BY_ID[id].q[L]),
+      suggest: small ? [] : near.map((r) => r.topic.q[L]),
+      also: [],
+      english: false,
     }
   }
   const tp = m.topic
+  const also = ranked.slice(1).filter((r) => r.score >= m.score * 0.6).slice(0, 2).map((r) => r.topic)
   return {
     id: tp.id,
     matched: true,
     text: tp.a[L],
     steps: tp.steps ? tp.steps[L] : null,
     sources: sourceList(tp.sites, tp.s || tp.q.ar),
-    followups: (tp.next || []).map((id) => BY_ID[id] && BY_ID[id].q[L]).filter(Boolean),
+    followups: (tp.next || []).filter((id) => !also.some((a) => a.id === id)).map((id) => BY_ID[id] && BY_ID[id].q[L]).filter(Boolean),
+    also: also.map((a) => a.q[L]),
+    suggest: [],
+    english: !['en', 'ar'].includes(lang),
   }
 }
 
