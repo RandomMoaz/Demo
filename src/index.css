@@ -1184,3 +1184,106 @@ label.btn.disabled{ opacity:.55; pointer-events:none; }
 @keyframes rc-pulse{ 0%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--coral) 55%, transparent) } 100%{ box-shadow:0 0 0 22px transparent } }
 .rc-note{ font-size:11px; color:var(--muted); text-align:center; }
 @media (prefers-reduced-motion: reduce){ .rc-mic.on, .rc-summary{ animation:none; } }
+
+/* ---------------- prayer alarm, redesigned ---------------- */
+.alm2{ flex:1; display:flex; flex-direction:column; min-height:0; position:relative; }
+.alm-next{ display:flex; align-items:center; gap:12px; padding:16px; border-radius:var(--r); color:#fff;
+  background:linear-gradient(135deg, var(--pc), color-mix(in srgb, var(--pc) 55%, #10161f)); box-shadow:0 10px 24px color-mix(in srgb, var(--pc) 30%, transparent); }
+.alm-next-l{ flex:1; display:flex; flex-direction:column; gap:2px; min-width:0; }
+.alm-eyebrow{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; opacity:.85; }
+.alm-next b{ font-size:24px; line-height:1.15; }
+.alm-next b span{ font-family:var(--font-arabic); font-weight:500; font-size:.8em; opacity:.9; }
+.alm-next-t{ font-size:13.5px; opacity:.92; }
+.alm-next-chip{ flex-shrink:0; min-height:40px; padding:0 14px; border-radius:20px; border:1.5px solid rgba(255,255,255,.55); background:rgba(255,255,255,.14); color:#fff; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; }
+.alm-next-chip.on{ background:#fff; color:var(--pc); border-color:#fff; }
+.alm-warn{ padding:14px 16px; border-radius:var(--r); background:color-mix(in srgb, var(--gold) 14%, var(--surface)); border:1.5px solid color-mix(in srgb, var(--gold) 55%, transparent); }
+.alm-warn b{ display:block; font-size:14px; color:var(--ink); }
+.alm-warn p{ font-size:12.5px; line-height:1.5; color:var(--muted); margin:4px 0 10px; }
+.alm-warn .btn{ width:100%; }
+.alm-loc-ok{ font-size:12px; color:var(--muted); text-align:center; margin-top:-4px; }
+.alm-h{ font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.alm-list{ padding:12px 12px 8px; }
+.alm-prow{ display:flex; align-items:center; gap:10px; padding:4px 0; border-bottom:1px solid var(--line); }
+.alm-prow:last-of-type{ border-bottom:0; }
+.alm-prow-main{ flex:1; min-width:0; display:flex; align-items:center; gap:10px; min-height:58px; padding:6px 4px; border:0; background:none; color:var(--ink); font:inherit; text-align:start; cursor:pointer; border-radius:12px; }
+.alm-prow-main:hover{ background:var(--bg); }
+.alm-dot{ width:10px; height:10px; border-radius:50%; background:var(--pc); flex-shrink:0; opacity:.35; }
+.alm-prow.on .alm-dot{ opacity:1; box-shadow:0 0 0 4px color-mix(in srgb, var(--pc) 22%, transparent); }
+.alm-prow-name{ display:flex; flex-direction:column; min-width:72px; }
+.alm-prow-name b{ font-size:15px; }
+.alm-prow-name small{ font-size:11.5px; color:var(--muted); }
+.alm-prow-time{ flex:1; display:flex; flex-direction:column; align-items:flex-end; min-width:0; text-align:end; }
+.alm-prow-time b{ font-size:16px; font-variant-numeric:tabular-nums; color:var(--muted); }
+.alm-prow.on .alm-prow-time b{ color:var(--ink); }
+.alm-prow-time small{ font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.alm-prow.next .alm-prow-name b::after{ content:""; display:inline-block; width:6px; height:6px; margin-inline-start:6px; border-radius:50%; background:var(--pc); vertical-align:middle; }
+.alm-switch{ position:relative; flex-shrink:0; width:52px; height:32px; border-radius:16px; border:0; background:var(--line); cursor:pointer; transition:background .2s; }
+.alm-switch i{ position:absolute; top:3px; inset-inline-start:3px; width:26px; height:26px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.25); transition:transform .2s; }
+.alm-switch.on{ background:var(--accent); }
+.alm-switch.on i{ transform:translateX(20px); }
+[dir="rtl"] .alm-switch.on i{ transform:translateX(-20px); }
+.alm-switch:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+.alm-add{ width:100%; min-height:48px; margin-top:6px; border:1.5px dashed var(--line); border-radius:12px; background:none; color:var(--accent); font:inherit; font-size:13.5px; font-weight:700; cursor:pointer; }
+.alm-hint{ display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:var(--r); background:var(--surface); border:1px solid var(--line); font-size:12.5px; line-height:1.45; color:var(--muted); }
+.alm-hint p{ flex:1; }
+.alm-hint .btn{ flex-shrink:0; min-height:40px; padding:8px 14px; font-size:12.5px; }
+
+/* editor sheet */
+.alm-sheet-bg{ position:absolute; inset:0; z-index:40; background:rgba(16,20,26,.45); display:flex; align-items:flex-end; animation:alm-fade .2s ease; }
+.alm-sheet{ width:100%; max-height:88%; overflow-y:auto; padding:8px 18px calc(18px + env(safe-area-inset-bottom, 0px)); border-radius:24px 24px 0 0; background:var(--surface); box-shadow:0 -12px 30px rgba(0,0,0,.2); animation:alm-up .25s ease; }
+.alm-sheet::before{ content:""; display:block; width:40px; height:5px; margin:2px auto 8px; border-radius:3px; background:var(--line); }
+.alm-sheet-h{ display:flex; align-items:center; justify-content:space-between; }
+.alm-sheet-h h2{ font-size:19px; color:var(--pc); }
+.alm-sheet-h h2 span{ font-family:var(--font-arabic); font-weight:500; font-size:.85em; }
+.alm-x{ width:40px; height:40px; border:0; background:none; color:var(--muted); font-size:26px; cursor:pointer; }
+.alm-step{ display:flex; align-items:center; gap:10px; }
+.alm-step button{ width:52px; height:52px; flex-shrink:0; border-radius:16px; border:1.5px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; font-size:24px; font-weight:700; cursor:pointer; }
+.alm-step button:disabled{ opacity:.35; }
+.alm-step div{ flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; }
+.alm-step b{ font-size:16px; }
+.alm-step small{ font-size:12px; color:var(--muted); }
+.alm-rings{ margin-top:8px; text-align:center; font-size:13px; font-weight:700; color:var(--pc); }
+.alm-tasks{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.alm-tasks button{ display:grid; grid-template-columns:30px 1fr; grid-template-rows:auto auto; column-gap:6px; align-items:center; min-height:58px; padding:8px 10px; border-radius:14px; border:1.5px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; text-align:start; cursor:pointer; }
+.alm-tasks button span{ grid-row:1 / 3; font-size:20px; }
+.alm-tasks button b{ font-size:13.5px; }
+.alm-tasks button small{ font-size:11px; color:var(--muted); line-height:1.3; }
+.alm-tasks button.on{ border-color:var(--accent); background:var(--lapis-soft); }
+.alm-tasks button:first-child{ grid-column:1 / -1; }
+.alm-tip{ margin-top:8px; font-size:12px; color:var(--gold); }
+.alm-del2{ display:block; width:100%; margin-top:12px; min-height:44px; border:0; background:none; color:var(--coral); font:inherit; font-size:13.5px; font-weight:700; cursor:pointer; }
+.alm-toast{ position:absolute; left:14px; right:14px; bottom:16px; z-index:45; display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:14px; background:#1d2329; color:#fff; font-size:13px; box-shadow:0 10px 28px rgba(0,0,0,.3); animation:alm-up .2s ease; }
+.alm-toast span{ flex:1; }
+.alm-toast button{ border:0; background:none; color:#7fd6c2; font:inherit; font-weight:800; cursor:pointer; padding:4px 6px; }
+@keyframes alm-up{ from{ transform:translateY(16px); opacity:0 } }
+@keyframes alm-fade{ from{ opacity:0 } }
+
+/* ringing: always dark, tinted by the prayer, easy on the eyes at Fajr */
+.alm-overlay.alm-ring{ justify-content:flex-start; padding-top:34px; color:#F3F1EA;
+  background:radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--pc) 55%, #0c1118), #0c1118 70%); }
+.alm-ring .alm-ring-anim{ width:120px; height:120px; }
+.alm-ring .alm-ring-time{ color:#fff; font-size:56px; }
+.alm-ring .alm-ring-name{ color:#fff; font-size:18px; margin-bottom:2px; }
+.alm-ring .alm-ring-name span{ font-family:var(--font-arabic); font-weight:500; }
+.alm-ring-now{ font-size:12.5px; opacity:.7; margin-bottom:14px; }
+.alm-ring .alm-card{ background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.14); color:#F3F1EA; backdrop-filter:blur(6px); }
+.alm-ring .alm-instr, .alm-ring .alm-strong{ color:#fff; }
+.alm-ring .alm-sub{ color:rgba(255,255,255,.7); }
+.alm-ring .alm-err{ color:#f3c3b6; }
+.alm-ring .alm-problem{ color:#fff; font-size:32px; }
+.alm-entry{ display:inline-block; min-width:2.2em; padding:0 .2em; border-bottom:3px solid #7fd6c2; color:#7fd6c2; }
+.alm-entry.empty{ color:rgba(255,255,255,.4); border-color:rgba(255,255,255,.3); }
+.alm-keys{ display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:14px; }
+.alm-keys button{ height:58px; border-radius:16px; border:0; background:rgba(255,255,255,.12); color:#fff; font:inherit; font-size:24px; font-weight:700; cursor:pointer; }
+.alm-keys button:active{ background:rgba(255,255,255,.25); }
+.alm-keys button.del{ font-size:20px; background:transparent; }
+.alm-ring .alm-stop{ min-height:56px; font-size:16px; }
+.alm-ring .alm-slot{ background:transparent; border-color:rgba(255,255,255,.35); color:#fff; }
+.alm-ring .alm-node{ background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.25); }
+.alm-ring .btn.ghost{ background:transparent; color:#fff; border-color:rgba(255,255,255,.35); }
+.alm-ring-link{ margin-top:14px; min-height:48px; padding:0 22px; border-radius:24px; border:1.5px solid rgba(255,255,255,.35); background:transparent; color:#fff; font:inherit; font-size:14px; font-weight:700; cursor:pointer; }
+.alm-test-badge{ position:absolute; top:14px; inset-inline-end:16px; padding:4px 10px; border-radius:10px; background:rgba(255,255,255,.16); color:#fff; font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
+.alm-after{ margin:-6px 0 14px; padding:10px 12px; border-radius:12px; background:var(--lapis-soft); color:var(--accent); font-size:13px; font-weight:600; }
+@media (prefers-reduced-motion: reduce){ .alm-sheet, .alm-sheet-bg, .alm-toast{ animation:none; } }
+[data-theme="night"] .alm-next{ background:linear-gradient(135deg, color-mix(in srgb, var(--pc) 62%, #10161f), color-mix(in srgb, var(--pc) 28%, #10161f)); }
+[data-theme="night"] .alm-next-chip.on{ color:#10161f; }
